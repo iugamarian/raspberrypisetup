@@ -1,0 +1,40 @@
+##### Script pentru Raspbian de instalare programe inainte de a avea internet:
+### Swap poate provoaca blocare cand este folosit, se foloseste script rpiswapoff pentru oprire
+sh rpiswapoff
+# Overclock provoaca instabilitate la procesor 100% cu scriere la viteza mare pe stick sau card.
+### Alias-uri la comenzi multimedia din doua litere:
+# Redare xvid si h264 sau cu licenta de cate 5$ mpeg1+mpeg2 si vc-1:
+echo "alias oi='omxplayer'" >> /home/pi/.bashrc
+# Download video de pe youtube la calitate maxima in home:
+echo "alias yt='cd /home/pi/youtube && ./youtube-dl --max-quality mp4'" >> /home/pi/.bashrc
+# Download video de pe youtube la calitate maxima in alt director indicat cu "ln -s director zoutube":
+echo "alias zt='cd /home/pi/zoutube && ./youtube-dl --max-quality mp4'" >> /home/pi/.bashrc
+# Luare de lista youtube in format text cu linii numerotate:
+echo "alias ly='lynx --dump -listonly'" >> /home/pi/.bashrc
+# "adresa" > fisier
+# Copiere de dvd intr-un fisier .mpg pentru redare mai eficienta de pe stick sau card:
+echo "alias my='mplayer dvd://1 -dumpstream -dumpfile'" >> /home/pi/.bashrc
+# fisier.mpg
+# fisier.mpg se reda cel mai bine cu xine-ui daca nu ai licenta mpeg1+mpeg2 de 5$ la omxplayer
+# Prin scriere de catre root .bashrc apartine root si se face sa apartina din nou userului pi:
+chown pi /home/pi/.bashrc
+### Comanda sync de scriere totala a datelor:
+# Trebuie scris tot pe card sau stick ca sa fie procesor liber in timpul rularii altei comenzi,
+# altfel procesor scrie greu daca este solicitat 100% si se poate umple buffer respectiv bloca.
+sync
+### Aceste pachete au optiuni speciale sau nu se gasesc in repository binar (compilate mar2015):
+#Instalare mpg123 care include libmpg123 cu optiune  --with-cpu=generic_fpu
+#!!!!!!!!!!Daca instalez mpg123 din repository imi suprascrie si libmpg123 deci instalez de aici:
+dpkg -i libmpg123*.deb
+dpkg -i mpg123*.deb
+### Pentru dezarhivare fisiere rar se instaleaza Unrar compilat din sursa nonlibera:
+dpkg -i unrar*.deb
+### Dezactivare screen saver, blank screen:
+cp xorg.conf /etc/X11
+### Instalare PPPOEconf care configureaza accesul la internet cu user si parola:
+cp pppoe/* /var/cache/apt/archives
+sync
+apt-get install -y pppoeconf
+sync
+### Rulare PPPOEconf pentru a specifica user si parola (se poate comenta cu # in fata):
+pppoeconf
