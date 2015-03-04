@@ -1,0 +1,25 @@
+umount /dev/sdc1
+umount /dev/sdc2
+umount /dev/sdc3
+umount /dev/sdc4
+umount /dev/sdc5
+umount /dev/sdc6
+umount /dev/sdc7
+umount /dev/sdc8
+mkdir /mnt/sdbootimg
+mount -o loop -t vfat sdboot.img /mnt/sdbootimg
+dd if=/dev/zero of=/dev/sdc count=8192 bs=512 conv=notrunc,noerror
+parted -s /dev/sdc mklabel msdos
+parted -s /dev/sdc unit cyl mkpart primary fat32 -- 0 -2
+parted -s /dev/sdc set 1 boot on
+apt-get install -y dosfstools
+sync
+mkfs.vfat -n System /dev/sdc1
+mkdir /mnt/sdbootreal
+mount /dev/sdc1 /mnt/sdbootreal
+cp -r /mnt/sdbootimg/* /mnt/sdbootreal
+mkdir /mnt/sdbootreal/date
+mkdir /mnt/sdbootreal/date/rpirestore
+cp -r * /mnt/sdbootreal/date/rpirestore
+sync
+nano /mnt/sdbootreal/cmdline.txt
