@@ -1,0 +1,24 @@
+umount /dev/sdb1
+umount /dev/sdb2
+umount /dev/sdb3
+umount /dev/sdb4
+umount /dev/sdb5
+umount /dev/sdb6
+umount /dev/sdb7
+umount /dev/sdb8
+mkfs.ext4 /dev/sdb1
+dd if=2014-01-07-wheezy-raspbian.img of=/dev/sdb1 skip=122880 count=5662720 bs=512 conv=notrunc,noerror
+e2fsck -fy /dev/sdb1
+resize2fs /dev/sdb1
+mkdir /mnt/rootreal
+mount /dev/sdb1 /mnt/rootreal
+rm /mnt/rootreal/etc/rc2.d/S02dphys-swapfile
+rm /mnt/rootreal/etc/rc3.d/S02dphys-swapfile
+rm /mnt/rootreal/etc/rc4.d/S02dphys-swapfile
+rm /mnt/rootreal/etc/rc5.d/S02dphys-swapfile
+chmod -x /mnt/rootreal/etc/init.d/dphys-swapfile
+/sbin/dphys-swapfile swapoff
+swapoff -a
+rm /mnt/rootreal/var/swap
+sync
+nano /mnt/rootreal/etc/fstab
