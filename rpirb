@@ -1,0 +1,44 @@
+##### Script pentru Raspbian de instalare programe dupa conectare la internet:
+### Instalarea programelor cele mai utile, inlocuind cele mai inutile:
+echo "deb-src http://mirrordirector.raspbian.org/raspbian/ wheezy main contrib non-free rpi" >> /etc/apt/sources.list
+sync
+apt-get update
+apt-get upgrade -y
+rpi-update
+sync
+apt-get remove -y xpdf
+apt-get install -y evince mc transmission audacious audacious-plugins dosfstools synaptic docx2txt iceweasel xine-ui lynx mplayer libdvdread4
+### Instalare libreoffice (trebuie indicata deschinerea cu Text Editor pentru rpirb si rpiswapoff):
+apt-get install -y libreoffice
+### Instalare pachete necesare pentru debuild care face .deb din surse:
+apt-get install -y devscripts debhelper
+### Multe programe folosesc Opengl iar Raspberry Pi are doar Opengl ES si pentru a rula trebuie driver software:
+#apt-get install -y libgl1-mesa-swx11
+# s-a instalat dupa, separat, deoarece programele depind de driver hard care aici nu este bun
+sync
+### Instalare librarie de redare fisiere mp3 cu optiune speciala la compilare ca sa functioneze (compilat-feb2015):
+### Nu mai trebuie deocamdata ca se instaleaza pachet .deb cu optiune in rpira
+#apt-get build-dep -y mpg123
+#mkdir /opt/libmpg123_generic_fpu
+#cp libmpg123.so.0.36.6 /opt/libmpg123_generic_fpu
+#rm -f /usr/lib/arm-linux-gnueabihf/libmpg123.so.0 && ln -s /opt/libmpg123_generic_fpu/libmpg123.so.0.36.6 /usr/lib/arm-linux-gnueabihf/libmpg123.so.0
+#echo "rm -f /usr/lib/arm-linux-gnueabihf/libmpg123.so.0 && ln -s /opt/libmpg123_generic_fpu/libmpg123.so.0.36.6 /usr/lib/arm-linux-gnueabihf/libmpg123.so.0" > /usr/bin/restoremp3 && chmod +x /usr/bin/restoremp3
+### Instalare Youtube Downloader in home:
+mkdir /home/pi/youtube
+chown pi /home/pi/youtube
+cp youtube-dl /home/pi/youtube
+chmod +x /home/pi/youtube/youtube-dl
+chown pi /home/pi/youtube/youtube-dl
+### Eliberare spatiu (a doua e mai periculoasa):
+apt-get clean
+#rm /var/cache/apt/archives/*.deb
+### Corectare posibile erori de instalare daca nu s-a putut lua ceva:
+apt-get install -y
+### Dezinstalare programe care nu mai sunt apelate de nimic:
+apt-get autoremove -y
+sync
+### Multe programe deja deschise cum ar fi xorg au fost actualizate dar in memorie ruleaza versiunea veche:
+# Se da restart sau oprire pentru a incarca versiunile actualizate, altfel ar fi posibile erori grave:
+pause 5
+reboot
+#poweroff
