@@ -1,0 +1,23 @@
+# Adaugare linie cu deb src in loc de deb in /etc/apt/sources.list
+# update, upgrade, rpi-update, reboot ca sa fie programele la zi
+apt-get install -y devscripts debhelper
+apt-get build-dep -y mpg123
+apt-get build-dep -y unrar-nonfree
+mkdir srcbuild
+cd srcbuild
+apt-get source mpg123
+apt-get source unrar-nonfree
+cd mpg123*
+# Editare debian/rules si adaugare --with-cpu=generic_fpu la randul de sub override_dh_auto_configure:
+# De exemplu: dh_auto_configure -- $(CONF_COMMON) $(CONF_$(CPU)) --with-cpu=generic_fpu
+# Fakeroot da eroare asa ca se intra direct ca root (dar suntem deja root cand rulam script):
+#sudo -s
+debuild -us -uc
+cd ..
+cd unrar-nonfree*
+debuild -us -uc
+sync
+cd ..
+cp *.deb destinatie
+chown -R pi destinatie
+sync
