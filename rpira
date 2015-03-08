@@ -31,6 +31,10 @@ dpkg -i mpg123*.deb
 dpkg -i unrar*.deb
 ### Dezactivare screen saver, blank screen:
 cp xorg.conf /etc/X11
+### Adaugare pi la grupul disk ca sa nu mai dea erori read-only la stick-uri si carduri:
+#Este deja grupul disks in wheezy dar mai tarziu.
+#groupadd disk
+usermod -G disk --append pi
 ### Instalare PPPOEconf care configureaza accesul la internet cu user si parola:
 cp pppoe/* /var/cache/apt/archives
 sync
