@@ -1,0 +1,512 @@
+#!/bin/bash
+# Advanced script to install and configure Arch with ppp on indicated sdcardforarch
+# More info and newest @ http://www.github.com/iugamarian/raspberrypisetup
+#
+# Forked from ShorTie	<idiot@dot.com> 
+# Brought to you by iugamarian	<iugamarian@yahoo.com> 
+
+# Configuration - choose here carefuly 
+
+sdcardforarch=/dev/sdx  			# Before running, lsblk to indicate card here
+pppusername="user"
+ppppassword="password"
+pppprovider="myisp"
+
+# Use a minimum 8 GB card as I also make a swap partition of 1024 MB. Down in "Fdisk area".
+
+#********** END Configuration **************************************************************
+
+# Noting time when started
+start_time=$(date)
+
+# Pi check
+echo "Checkin too see if being run on a Raspberry Pi:"
+echo "Checkin too see if being run on a Raspberry Pi"
+if [ "cat /proc/cpuinfo | grep BCM" == "" ]; then
+    echo "Not running on a Raspberry Pi. I need that for installing ppp. Exiting."
+    exit 1
+else
+    echo "Running on a Raspberry Pi"
+fi
+
+echo ""
+
+echo "The the cpu of this Raspberry Pi is:"
+echo ""
+
+if [ "cat /proc/cpuinfo | grep ARMv6" == "" ]; then
+    echo "BCM2836 ARMv7 Raspberry Pi 2"
+    rpiversion="bcm2836"
+else
+    rpiversion="unknown"
+fi
+
+if [ "cat /proc/cpuinfo | grep ARMv7" == "" ]; then
+    echo "BCM2836 ARMv6 Raspberry Pi 2"
+    rpiversion="bcm2835"
+else
+    version="unknown"
+fi
+
+if [ "$rpiversion" = "unknown" ]; then
+    echo "Can't detect version. Is this a 3 ? Modify the script. Exiting."
+    exit 1
+fi
+
+echo ""
+
+# Check to see if running as root
+echo -e "\nChecking for root."
+if [ `id -u` != 0 ]; then
+    echo "Not root."
+    echo -e "Need to be run as root.\n"
+    echo " Try 'sudo sh rpiarchlxde' as a user. Exiting."
+    exit 1
+else
+    echo "Root."
+fi
+echo " "
+
+# Allowing dd to be able to clear MBR (permission)
+
+if [ `logname` != "logname: no login name" ]; then
+echo "Sudo is used by `logname`."
+echo "Adding user `logname` to the disk group."
+usermod -G disk --append `logname`
+else
+echo "Sudo is not used. Adding root to the disk group."
+usermod -G disk --append root
+fi
+echo ""
+
+# Checking for programs that are needed
+needprograms=""
+
+if [ `which fdisk` != "" ]; then
+echo "Found fdisk."
+else
+neededprograms += "fdisk "
+fi
+
+if [ `which wget` != "" ]; then
+echo "Found wget."
+else
+neededprograms += "wget "
+fi
+
+echo "Checking for necessary programs..."
+if [ `which bsdtar` != "" ]; then
+echo "Found bsdtar."
+else
+neededprograms += "bsdtar "
+fi
+
+if [ "$neededprograms" = "" ]; then
+echo "All needed programs available."
+else
+echo "Missing needed programs, install them:"
+echo ""
+echo $neededprograms
+echo ""
+echo "Exiting."
+exit 1
+fi
+
+# Detecting availability of indicated device
+if ! (fdisk -l | grep $sdcardforarch); then
+        echo "Can't find ($sdcardforarch). Insert and indicate it."
+	echo "No files. Only devices. Exiting."
+exit 1
+else
+echo "Found $sdcardforarch."
+fi
+
+echo ""
+
+# Safety unmounting of possible partitions, logicals can start from 5
+echo "Unmounting partitions, up to 9, with or without p in front:"
+echo ""
+umount "$sdcardforarch"1
+umount "$sdcardforarch"2
+umount "$sdcardforarch"3
+umount "$sdcardforarch"4
+umount "$sdcardforarch"5
+umount "$sdcardforarch"6
+umount "$sdcardforarch"7
+umount "$sdcardforarch"8
+umount "$sdcardforarch"9
+umount "$sdcardforarch"p1
+umount "$sdcardforarch"p2
+umount "$sdcardforarch"p3
+umount "$sdcardforarch"p4
+umount "$sdcardforarch"p5
+umount "$sdcardforarch"p6
+umount "$sdcardforarch"p7
+umount "$sdcardforarch"p8
+umount "$sdcardforarch"p9
+
+echo "Deleting MBR and fat allocation table general area with dd:"
+# Need to dd more because fat filesystems may get confused about random
+# data in their first part where they store the fat allocation table
+
+dd if=/dev/zero of=$sdcardforarch bs=1M count=32 iflag=fullblock
+
+echo ""
+
+echo "Partitioning indicated device:"
+echo ""
+
+# On fdisk older than 25, setting bootable flag adds 1 after a: "a,1" < 25, "a" >= 25
+# But I follow the archlinuxarm instructions which don't set booteble flag
+
+# "Fdisk area". Be careful about the new lines (Enter).
+
+fdisk $sdcardforarch <<EOF
+o
+n
+
+
+
++140M
+t
+c
+n
+
+
+
++1024M
+n
+
+
+
+
+w
+EOF
+
+# Finished partitioning. Be careful about the new lines (Enter).
+
+# Detecting if the device is seen as a mmcblk so that partitions have a p in front
+if [ `echo $sdcardforarch | grep mmcblk` != "" ]; then
+echo "Partition numbers have a p in front of them..."
+bootpart="$sdcardforarch"p1
+swappart="$sdcardforarch"p2
+rootpart="$sdcardforarch"p3
+else
+echo "Partition numbers don't have a p in front of them..."
+bootpart="$sdcardforarch"1
+swappart="$sdcardforarch"2
+rootpart="$sdcardforarch"3
+fi
+
+echo -n "Boot partition is "
+echo $bootpart
+echo -n "Swap partition is "
+echo $swappart
+echo -n "Root partition is "
+echo $rootpart
+
+echo "Formatting partitions:"
+echo ""
+
+mkfs.vfat -n BOOTRPI $bootpart
+mkswap $swappart
+# Disabling lazy options so that all inodes get written now not bit by bit later.
+mkfs.ext4 -m 0 -L ARCHRPI -E lazy-itable-init=0,lazy-journal-init=0 $rootpart
+
+echo "Mounting partitions:"
+echo ""
+
+mkdir sdcardforarch
+mount $rootpart sdcardforarch
+mkdir sdcardforarch/boot
+mount $bootpart sdcardforarch/boot
+
+echo "Downloading and unpacking arch image:"
+echo ""
+
+if [ "$rpiversion" = "bcm2835" ]; then
+wget http://archlinuxarm.org/os/ArchLinuxARM-rpi-latest.tar.gz
+bsdtar -xpf ArchLinuxARM-rpi-latest.tar.gz -C sdcardforarch
+fi
+
+if [ "$rpiversion" = "bcm2836" ]; then
+wget http://archlinuxarm.org/os/ArchLinuxARM-rpi-2-latest.tar.gz
+bsdtar -xpf ArchLinuxARM-rpi-2-latest.tar.gz -C sdcardforarch
+fi
+
+sync
+
+echo "Detecting exact names for ppp package and it's dependencies:"
+echo ""
+# The version of a package changes the link when updated to a mirror
+# To have the links we need to know their current version
+# If you don't have ppp you can't connect to internet if you don't have router and it's pppoe
+# Belive me, no internet is a disaster, pacman needs it's mirrors. This is the solution.
+# No pacstrap - raspbian would need too many configuration changes and would be crippled (if errors).
+# "ppp" depends on "libpcap" which depends on "libnl" which then has all it needs from root.
+# So the install order needs to be: libnl -> libpcap -> ppp
+# Offline install is done later one by one with pacman -U package
+wget http://eu.mirror.archlinuxarm.org/armv7h/core/core.db.tar.gz
+mkdir archcoredbextract
+bsdtar -xpf core.db.tar.gz -C archcoredbextract
+namelibnl=`ls archcoredbextract | grep libnl`
+namelibpcap=`ls archcoredbextract | grep libpcap`
+nameppp=`ls archcoredbextract | grep libpcap`
+echo $namelibnl
+echo $namelibpcap
+echo $nameppp
+#And the links are:
+linklibnl=http://eu.mirror.archlinuxarm.org/armv7h/core/"$namelibnl"-armv7h.pkg.tar.xz
+linklibpcap=http://eu.mirror.archlinuxarm.org/armv7h/core/"$namelibpcap"-armv7h.pkg.tar.xz
+linkppp=http://eu.mirror.archlinuxarm.org/armv7h/core/"$nameppp"-armv7h.pkg.tar.xz
+echo "Downloading the packages into the installed /root dir:"
+
+# Example for reference:
+# http://eu.mirror.archlinuxarm.org/armv7h/core/libnl-3.2.25-1-armv7h.pkg.tar.xz
+# http://eu.mirror.archlinuxarm.org/armv7h/core/libpcap-1.6.2-1-armv7h.pkg.tar.xz
+# http://eu.mirror.archlinuxarm.org/armv7h/core/ppp-2.4.7-1-armv7h.pkg.tar.xz
+
+######Directory changing beginning
+cd sdcardforarch/root
+wget $linklibnl
+wget $linklibpcap
+wget $linkppp
+echo "Generating script ppparchinstall.sh for offline install of ppp:"
+#Back to the names now... adding the -armv7h.pkg.tar.xz though
+echo '#!/bin/bash' > ppparchinstall.sh
+# for #!/bin/bash if I put "" gives me an error because of the !
+echo "pacman -U $namelibnl-armv7h.pkg.tar.xz" >> ppparchinstall.sh
+echo "pacman -U $namelibpcap-armv7h.pkg.tar.xz" >> ppparchinstall.sh
+echo "pacman -U $nameppp-armv7h.pkg.tar.xz" >> ppparchinstall.sh
+#Done by configuration down
+#echo "modprobe ppp-generic" >> ppparchinstall.sh
+#echo "modprobe snd-bcm2835" >> ppparchinstall.sh
+echo "ln -s /etc/ppp/peers/$pppprovider /etc/ppp/peers/provider" >> ppparchinstall.sh
+
+#Systemd doesn't do daemon-reload unless the changed services are disabled and stopped twice
+
+echo "systemctl disable ppp@.service" >> ppparchinstall.sh
+echo "systemctl disable ppp@$pppprovider.service" >> ppparchinstall.sh
+echo "systemctl stop ppp@.service" >> ppparchinstall.sh
+echo "systemctl stop ppp@$pppprovider.service" >> ppparchinstall.sh
+echo "sleep 1" >> ppparchinstall.sh
+echo "systemctl daemon-reload" >> ppparchinstall.sh
+echo "sleep 5" >> ppparchinstall.sh
+echo "pacman -Syu" >> ppparchinstall.sh
+
+#Second time after a daemon-reload...
+
+echo "systemctl disable ppp@.service" >> ppparchinstall.sh
+echo "systemctl disable ppp@$pppprovider.service" >> ppparchinstall.sh
+echo "systemctl stop ppp@.service" >> ppparchinstall.sh
+echo "systemctl stop ppp@$pppprovider.service" >> ppparchinstall.sh
+echo "sleep 1" >> ppparchinstall.sh
+
+# And then after another daemon-reload it works... I think
+
+echo "systemctl daemon-reload" >> ppparchinstall.sh
+echo "sleep 5" >> ppparchinstall.sh
+echo "systemctl enable ppp@$pppprovider.service" >> ppparchinstall.sh
+echo "systemctl start ppp@$pppprovider.service" >> ppparchinstall.sh
+echo "systemctl enable systemd-networkd" >> ppparchinstall.sh
+echo "systemctl start systemd-networkd" >> ppparchinstall.sh
+echo "systemctl enable systemd-timesyncd" >> ppparchinstall.sh
+echo "systemctl start systemd-timesyncd" >> ppparchinstall.sh
+echo "sleep 1" >> ppparchinstall.sh
+echo "sync" >> ppparchinstall.sh
+echo "exec startlxde" > .xinitrc
+echo "pacman -S chromium xf86-video-fbturbo-git arch-install-scripts dosfstools urar uzip unarj p7zip gzip bzip2 xarchiver pkgfile fdisk parted mkinitcpio upower ttf-dejavu xorg-server xorg-xinit lxde leafpad chromium youtube-dl kodi-rbp omxplayer transmission-gtk audacious mc openra yaourt libnewt newt-syrup gimp libreoffice-still jre8-openjdk jdk8-openjdk xsane openssh openssl libksane xsane-gimp inkscape timidity++ timidity-freepats gparted imagemagick libbcm2835 wiringpi espeak mpg123 flac lame phonon-qtp-gstreamer kactivities4 krita alsa-utils alsa-plugins pulseaudio pulseaudio-alsa paprefs pavucontrol" > chromiumforroot.sh
+echo "sleep 2" >> chromiumforroot.sh
+echo "pkgfile --update" >> chromiumforroot.sh
+echo "sleep 2" >> chromiumforroot.sh
+echo "sed -i 's/load-module module-suspend-on-idle/#load-module module-suspend-on-idle/g' ../etc/pulse/default.pa" >> chromiumforroot.sh
+echo "sed -i 's/load-module module-suspend-on-idle/#load-module module-suspend-on-idle/g' ../etc/pulse/system.pa" >> chromiumforroot.sh
+echo "echo \"flat-volumes = no\" >> ../etc/system/default.pa" >> chromiumforroot.sh
+echo "echo \"high-priority = no\" >> ../etc/system/default.pa" >> chromiumforroot.sh
+echo "echo \"nice-level = -1\" >> ../etc/system/default.pa" >> chromiumforroot.sh
+echo "echo \"\" >> ../etc/system/default.pa" >> chromiumforroot.sh
+echo "sleep 2" >> chromiumforroot.sh
+echo "systemctl --user enable pulseaudio.service" >> chromiumforroot.sh
+echo "systemctl --user start pulseaudio.service" >> chromiumforroot.sh
+echo "amixer cset numid=3 -- 90%" >> chromiumforroot.sh
+echo "sed -i 's/chromium %U/chromium --user-data-dir \/var\/cache\/chromiumdir %U/g' ../usr/share/applications/chromium.desktop" >> chromiumforroot.sh
+echo "mkdir ../var/cache/chromiumdir" >> chromiumforroot.sh
+echo "chown 777 ../var/cache/chromiumdir" >> chromiumforroot.sh
+echo "sync" > chromiumforroot.sh
+cd ../../
+######Directory changing ending
+
+echo "File /root/ppparchinstall.sh is as follows:"
+echo ""
+cat sdcardforarch/root/ppparchinstall.sh
+echo ""
+echo ""
+
+# Root is on partition 3 not 2, informing cmdline.txt and fstab
+sed -i 's/mmcblk0p2/mmcblk0p3/g' sdcardforarch/boot/cmdline.txt
+sed -i 's/mmcblk0p2/mmcblk0p3/g' sdcardforarch/etc/fstab
+echo "/dev/mmcblk0p2	none      	swap      	defaults  	0 0" >> sdcardforarch/etc/fstab
+
+echo "Configuring  ppp with information from configuration..."
+echo ""
+
+echo "plugin rp-pppoe.so" > sdcardforarch/etc/ppp/peers/$pppprovider
+echo "eth0" >> sdcardforarch/etc/ppp/peers/$pppprovider
+echo "name \"$pppusername\"" >> sdcardforarch/etc/ppp/peers/$pppprovider
+echo "usepeerdns" >> sdcardforarch/etc/ppp/peers/$pppprovider
+echo "persist" >> sdcardforarch/etc/ppp/peers/$pppprovider
+echo "defaultroute" >> sdcardforarch/etc/ppp/peers/$pppprovider
+echo "hide-password" >> sdcardforarch/etc/ppp/peers/$pppprovider
+echo "noauth" >> sdcardforarch/etc/ppp/peers/$pppprovider
+echo "" >> sdcardforarch/etc/ppp/peers/$pppprovider
+
+echo "File /etc/ppp/peers/$pppprovider is as follows:"
+echo ""
+cat sdcardforarch/etc/ppp/peers/$pppprovider
+echo ""
+echo ""
+
+echo "\"$pppusername\"	*	\"$ppppassword\"" > sdcardforarch/etc/ppp/pap-secrets
+
+# For safety I will copy pap-secrets to also chap-secrets
+cp sdcardforarch/etc/ppp/pap-secrets sdcardforarch/etc/ppp/chap-secrets
+
+echo "File /etc/ppp/peers/pap-secrets and chap-secrets are as follows:"
+echo ""
+cat sdcardforarch/etc/ppp/peers/pap-secrets
+echo ""
+echo ""
+
+echo "Conf file to load module ppp-generic:"
+echo "/etc/modules-load.d/ppp-generic.conf"
+echo "ppp-generic" > sdcardforarch/etc/modules-load.d/ppp-generic.conf
+echo ""
+echo "Conf file to load module snd-bcm2835:"
+echo "/etc/modules-load.d/snd-bcm2835.conf"
+echo "snd-bcm2835" > sdcardforarch/etc/modules-load.d/snd-bcm2835.conf
+echo ""
+echo ""
+echo "The link to provider will be made by ppparchinstall.sh"
+echo ""
+echo "The systemd ppp enable will be made by ppparchinstall.sh"
+echo ""
+echo "Conf file to start network in systemd before pppd:"
+echo "Actual file: /etc/systemd/system/ppp@.service.d/ppp.conf"
+echo "[Service]" > /etc/systemd/system/ppp\@.service.d/ppp.conf
+echo "ExecStartPre=/usr/bin/ip link set eth0 up" >> sdcardforarch/etc/systemd/system/ppp\@.service.d/ppp.conf
+echo ""
+echo "File /etc/systemd/system/ppp\@.service.d/ppp.conf is as follows:"
+echo ""
+cat sdcardforarch/etc/systemd/system/ppp\@.service.d/ppp.conf
+echo ""
+echo ""
+echo "Conf file to stop kernel messages:"
+echo "/etc/sysctl.d/20-quiet-prink.conf"
+echo "kernel.printk = 3 3 3 3" > sdcardforarch/etc/sysctl.d/20-quiet-prink.conf
+echo ""
+cat sdcardforarch/etc/sysctl.d/20-quiet-prink.conf
+echo ""
+echo ""
+echo "Conf file to improove disk performance:"
+echo "/etc/sysctl.d/30-rpi-optimizations.conf"
+echo ""
+cat <<EOF > sdcardforarch/etc/sysctl.d/30-rpi-optimizations.conf
+vm.swappiness = 10
+vm.min_free_kbytes = 8192
+vm.vfs_cache_pressure = 50
+vm.dirty_bytes = 8388608
+vm.dirty_background_bytes = 8388608
+vm.dirty_writeback_centisecs = 600
+vm.dirty_expire_centisecs = 600
+
+# In other words the seven optimizations do this, in their order, each in paranthesis:
+#		(keep caches medium and swap low), (keep a free memory of 8 MB), (keep a
+#		medium amount of file information in cache), (processes write after reaching
+#		8MB in their memory) to a (cache of 8 MB in size), in which (old data is
+#		written every 6 seconds) and (data is considered old after 6 seconds).
+
+EOF
+
+cat sdcardforarch/etc/sysctl.d/30-rpi-optimizations.conf
+echo ""
+echo ""
+
+echo "Creating config.txt"; echo ""
+cat <<EOF > sdcardforarch/boot/config.txt
+# For more options and information see 
+# http://www.raspberrypi.org/documentation/configuration/config-txt.md
+# Some settings may impact device functionality. See link above for details
+
+# uncomment if you get no picture on HDMI for a default "safe" mode
+#hdmi_safe=1
+
+# uncomment this if your display has a black border of unused pixels visible
+# and your display can output without overscan
+#disable_overscan=1
+
+# uncomment the following to adjust overscan. Use positive numbers if console
+# goes off screen, and negative if there is too much border
+#overscan_left=16
+#overscan_right=16
+#overscan_top=16
+#overscan_bottom=16
+
+# uncomment to force a console size. By default it will be display's size minus
+# overscan.
+#framebuffer_width=1280
+#framebuffer_height=720
+
+# uncomment if hdmi display is not detected and composite is being output
+#hdmi_force_hotplug=1
+
+# uncomment to force a specific HDMI mode (this will force VGA)
+#hdmi_group=1
+#hdmi_mode=1
+
+# uncomment to force a HDMI mode rather than DVI. This can make audio work in
+# DMT (computer monitor) modes
+#hdmi_drive=2
+
+# uncomment to increase signal to HDMI, if you have interference, blanking, or
+# no display
+#config_hdmi_boost=4
+
+# uncomment for composite PAL
+#sdtv_mode=2
+
+#uncomment to overclock the arm. 700 MHz is the default.
+#arm_freq=800
+
+#Rezolution 1280x1024 @ 60 Hz
+hdmi_group=2
+hdmi_mode=35
+
+For DVI it's 1, for HDMI with sound it's 2
+#hdmi_drive=1
+hdmi_drive=2
+
+hdmi_force_edid_audio=1
+hdmi_force_hotplug=1
+gpu_mem=256
+framebuffer_depth=24
+
+# For camera and webm
+start_file=start_x.elf
+fixup_file=fixup_x.dat
+
+EOF
+
+echo "Conf /etc/X11/xorg.conf.d/50-on-flags.conf for screen always on:"; echo ""
+cat <<EOF > /etc/X11/xorg.conf.d/50-on-flags.conf
+Section "ServerFlags"
+   Option "BlankTime" "0"
+   Option "StandbyTime" "0"
+   Option "SuspendTime" "0"
+   Option "OffTime" "0"
+EndSection
+
+EOF
+
+echo -e "\n\nCompleted.\n"
+echo "Exiting happy."
+exit 0
