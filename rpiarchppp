@@ -1,16 +1,17 @@
 #!/bin/bash
 # Advanced script to install and configure Arch with ppp on indicated sdcardforarch
 # More info and newest @ http://www.github.com/iugamarian/raspberrypisetup
-# Version 1.12
+# Version 1.13 tested and it works
 # Forked from ShorTie	<idiot@dot.com> 
 # Brought to you by iugamarian	<iugamarian@yahoo.com> 
 
 # Configuration - choose here carefuly 
 
-sdcardforarch=/dev/sdx  			# Before running, lsblk to indicate card here
+sdcardforarch=/dev/sdx 			# Before running, lsblk to indicate card here
 pppusername="user"
 ppppassword="password"
 pppprovider="myisp"
+inversatepi=0				# If set to 1, will write for the other architecture
 
 # Use a minimum 8 GB card as I also make a swap partition of 1024 MB. Down in "Fdisk area".
 
@@ -19,9 +20,11 @@ pppprovider="myisp"
 # Noting time when started
 start_time=$(date)
 
+echo ""
+echo ""
+
 # Pi check
-echo "Checking too see if being run on a Raspberry Pi:"
-if [ "cat /proc/cpuinfo | grep BCM" == "" ]; then
+if [ `cat /proc/cpuinfo | grep BCM |wc -c` -eq 0 ]; then
     echo "Not running on a Raspberry Pi. I need that for installing ppp. Exiting."
     exit 1
 else
@@ -33,26 +36,45 @@ echo ""
 echo "The the cpu of this Raspberry Pi is:"
 echo ""
 
-if [ "cat /proc/cpuinfo | grep ARMv6" == "" ]; then
+if [ `cat /proc/cpuinfo | grep ARMv6 |wc -c` -eq 0 ]; then
     echo "BCM2836 ARMv7 Raspberry Pi 2"
     rpiversion="armv7h"
 else
     rpiversion="unknown"
 fi
 
-if [ "cat /proc/cpuinfo | grep ARMv7" == "" ]; then
+if [ `cat /proc/cpuinfo | grep ARMv7 |wc -c` -eq 0 ]; then
     echo "BCM2835 ARMv6 Raspberry Pi"
     rpiversion="armv6h"
 else
     version="unknown"
 fi
 
-if [ "$rpiversion" = "unknown" ]; then
+if [ "$rpiversion" == "unknown" ]; then
     echo "Can't detect version. Is this a Raspberry Pi 3 ? Modify the script. Exiting."
     exit 1
 fi
 
+if [ $inversatepi -eq 1 ]; then
+    echo ""
+    echo "Inversating arhitecture..."
+    if [ "$rpiversion" == "armv6h" ]; then
+       rpiversion="armv7h"
+       else
+       rpiversion="armv6h"
+    fi
+fi
 echo ""
+echo "Selected Arch architecture is:"
+echo ""
+echo ""
+echo $rpiversion
+echo ""
+echo ""
+echo "============================================================"
+echo ""
+
+sleep 2
 
 # Check to see if running as root
 echo -e "\nChecking for root."
@@ -68,36 +90,39 @@ echo " "
 
 # Allowing dd to be able to clear MBR (permission)
 
-if [ `logname` != "logname: no login name" ]; then
-echo "Sudo is used by `logname`."
-echo "Adding user `logname` to the disk group."
-usermod -G disk --append `logname`
+viewsudouser=`logname`
+
+if [ "$viewsudouser" != "root" ]; then
+echo "Sudo is used by $viewsudouser."
+echo "Adding user $viewsudouser to the disk group."
+usermod -G disk --append $viewsudouser
 else
 echo "Sudo is not used. Adding root to the disk group."
 usermod -G disk --append root
 fi
 echo ""
 
-# Checking for programs that are needed
-needprograms=""
+echo "Checking for programs that are needed:"
+echo ""
 
-if [ `which fdisk` != "" ]; then
+neededprograms=""
+
+if [ `which fdisk |wc -c` != 0 ]; then
 echo "Found fdisk."
 else
-neededprograms += "fdisk "
+neededprograms+="fdisk "
 fi
 
-if [ `which wget` != "" ]; then
+if [ `which wget |wc -c` != 0 ]; then
 echo "Found wget."
 else
-neededprograms += "wget "
+neededprograms+="wget "
 fi
 
-echo "Checking for necessary programs..."
-if [ `which bsdtar` != "" ]; then
+if [ `which bsdtar |wc -c` != 0 ]; then
 echo "Found bsdtar."
 else
-neededprograms += "bsdtar "
+neededprograms+="bsdtar "
 fi
 
 if [ "$neededprograms" = "" ]; then
@@ -111,16 +136,25 @@ echo "Exiting."
 exit 1
 fi
 
+echo ""
+
 # Detecting availability of indicated device
 if ! (fdisk -l | grep $sdcardforarch); then
         echo "Can't find ($sdcardforarch). Insert and indicate it."
 	echo "No files. Only devices. Exiting."
 exit 1
 else
-echo "Found $sdcardforarch."
+echo ""
+echo ""
+echo "Found device $sdcardforarch."
 fi
 
 echo ""
+echo ""
+echo "============================================================"
+echo ""
+
+sleep 2
 
 # Safety unmounting of possible partitions, logicals can start from 5
 echo "Unmounting partitions, up to 9, with or without p in front:"
@@ -144,12 +178,15 @@ umount "$sdcardforarch"p7
 umount "$sdcardforarch"p8
 umount "$sdcardforarch"p9
 
+echo ""
+
 echo "Deleting MBR and fat allocation table general area with dd:"
 # Need to dd more because fat filesystems may get confused about random
 # data in their first part where they store the fat allocation table
 
 dd if=/dev/zero of=$sdcardforarch bs=1M count=32 iflag=fullblock
 
+echo ""
 echo ""
 
 echo "Partitioning indicated device:"
@@ -184,33 +221,43 @@ EOF
 
 # Finished partitioning. Be careful about the new lines (Enter).
 
-# Detecting if the device is seen as a mmcblk so that partitions have a p in front
-if [ `echo $sdcardforarch | grep mmcblk` != "" ]; then
+sleep 5
+
+echo ""
+echo "=================================================="
+echo ""
+echo ""
+echo "Detecting if the device is seen as a mmcblk so that partitions have a p in front"
+echo ""
+if [ `echo $sdcardforarch | grep mmcblk |wc -c` != 0 ]; then
+echo ""
 echo "Partition numbers have a p in front of them..."
 bootpart="$sdcardforarch"p1
 swappart="$sdcardforarch"p2
 rootpart="$sdcardforarch"p3
 else
+echo ""
 echo "Partition numbers don't have a p in front of them..."
 bootpart="$sdcardforarch"1
 swappart="$sdcardforarch"2
 rootpart="$sdcardforarch"3
 fi
-
+echo ""
 echo -n "Boot partition is "
 echo $bootpart
 echo -n "Swap partition is "
 echo $swappart
 echo -n "Root partition is "
 echo $rootpart
-
+echo ""
+echo ""
 echo "Formatting partitions:"
 echo ""
 
 mkfs.vfat -n BOOTRPI $bootpart
 mkswap $swappart
 # Disabling lazy options so that all inodes get written now not bit by bit later.
-mkfs.ext4 -m 0 -L ARCHRPI -E lazy-itable-init=0,lazy-journal-init=0 $rootpart
+mkfs.ext4 -m 0 -L ARCHRPI -E lazy_itable_init=0,lazy_journal_init=0 $rootpart
 
 echo "Mounting partitions:"
 echo ""
@@ -220,16 +267,25 @@ mount $rootpart sdcardforarch
 mkdir sdcardforarch/boot
 mount $bootpart sdcardforarch/boot
 
-echo "Downloading and unpacking arch image:"
+echo ""
+echo "=================================================="
 echo ""
 
-if [ "$rpiversion" = "armv6h" ]; then
-wget http://archlinuxarm.org/os/ArchLinuxARM-rpi-latest.tar.gz
+sleep 2
+
+echo "Downloading Arch image with wget:"
+echo ""
+echo ""
+
+if [ "$rpiversion" == "armv6h" ]; then
+wget -c http://archlinuxarm.org/os/ArchLinuxARM-rpi-latest.tar.gz
+echo "Unpacking Arch image with bsdtar... wait... (armv6h)"
 bsdtar -xpf ArchLinuxARM-rpi-latest.tar.gz -C sdcardforarch
 fi
 
-if [ "$rpiversion" = "armv7h" ]; then
-wget http://archlinuxarm.org/os/ArchLinuxARM-rpi-2-latest.tar.gz
+if [ "$rpiversion" == "armv7h" ]; then
+wget -c http://archlinuxarm.org/os/ArchLinuxARM-rpi-2-latest.tar.gz
+echo "Unpacking Arch image with bsdtar... wait... (armv7h)
 bsdtar -xpf ArchLinuxARM-rpi-2-latest.tar.gz -C sdcardforarch
 fi
 
@@ -251,7 +307,7 @@ mkdir archcoredbextract
 bsdtar -xpf core.db.tar.gz -C archcoredbextract
 namelibnl=`ls archcoredbextract | grep libnl`
 namelibpcap=`ls archcoredbextract | grep libpcap`
-nameppp=`ls archcoredbextract | grep libpcap`
+nameppp=`ls archcoredbextract | grep ppp`
 echo $namelibnl
 echo $namelibpcap
 echo $nameppp
@@ -268,13 +324,13 @@ echo "Downloading the packages into the installed /root dir:"
 
 ######Directory changing beginning
 cd sdcardforarch/root
-wget $linklibnl
-wget $linklibpcap
-wget $linkppp
+wget -c $linklibnl
+wget -c $linklibpcap
+wget -c $linkppp
 echo "Generating script ppparchinstall.sh for offline install of ppp:"
 #Back to the names now... adding the -armv7h.pkg.tar.xz though
 echo '#!/bin/bash' > ppparchinstall.sh
-# for #!/bin/bash if I put "" gives me an error because of the !
+# ... for #!/bin/bash if I put "" gives me an error because of the !
 echo "pacman -U $namelibnl-$rpiversion.pkg.tar.xz" >> ppparchinstall.sh
 echo "pacman -U $namelibpcap-$rpiversion.pkg.tar.xz" >> ppparchinstall.sh
 echo "pacman -U $nameppp-$rpiversion.pkg.tar.xz" >> ppparchinstall.sh
@@ -292,7 +348,6 @@ echo "systemctl stop ppp@$pppprovider.service" >> ppparchinstall.sh
 echo "sleep 1" >> ppparchinstall.sh
 echo "systemctl daemon-reload" >> ppparchinstall.sh
 echo "sleep 5" >> ppparchinstall.sh
-echo "pacman -Syu" >> ppparchinstall.sh
 
 #Second time after a daemon-reload...
 
@@ -314,8 +369,12 @@ echo "systemctl enable systemd-timesyncd" >> ppparchinstall.sh
 echo "systemctl start systemd-timesyncd" >> ppparchinstall.sh
 echo "sleep 1" >> ppparchinstall.sh
 echo "sync" >> ppparchinstall.sh
+
 echo "exec startlxde" > .xinitrc
-echo "pacman -S chromium xf86-video-fbturbo-git arch-install-scripts dosfstools urar uzip unarj p7zip gzip bzip2 xarchiver pkgfile fdisk parted mkinitcpio upower ttf-dejavu xorg-server xorg-xinit lxde leafpad chromium youtube-dl kodi-rbp omxplayer transmission-gtk audacious mc openra yaourt libnewt newt-syrup gimp libreoffice-still jre8-openjdk jdk8-openjdk xsane openssh openssl libksane xsane-gimp inkscape timidity++ timidity-freepats gparted imagemagick libbcm2835 wiringpi espeak mpg123 flac lame phonon-qtp-gstreamer kactivities4 krita alsa-utils alsa-plugins pulseaudio pulseaudio-alsa paprefs pavucontrol" > chromiumforroot.sh
+
+echo '#!/bin/bash' > chromiumforroot.sh
+echo "pacman -Syu" >> chromiumforroot.sh
+echo "pacman -S chromium xf86-video-fbturbo-git arch-install-scripts dosfstools urar uzip unarj p7zip gzip bzip2 xarchiver pkgfile fdisk parted mkinitcpio upower ttf-dejavu xorg-server xorg-xinit lxde leafpad chromium youtube-dl kodi-rbp omxplayer transmission-gtk audacious mc openra yaourt libnewt newt-syrup gimp libreoffice-still jre8-openjdk jdk8-openjdk xsane openssh openssl libksane xsane-gimp inkscape timidity++ timidity-freepats gparted imagemagick libbcm2835 wiringpi espeak mpg123 flac lame phonon-qtp-gstreamer kactivities4 krita alsa-utils alsa-plugins pulseaudio pulseaudio-alsa paprefs pavucontrol" >> chromiumforroot.sh
 echo "sleep 2" >> chromiumforroot.sh
 echo "pkgfile --update" >> chromiumforroot.sh
 echo "sleep 2" >> chromiumforroot.sh
@@ -336,11 +395,15 @@ echo "sync" > chromiumforroot.sh
 cd ../../
 ######Directory changing ending
 
-echo "File /root/ppparchinstall.sh is as follows:"
-echo ""
-cat sdcardforarch/root/ppparchinstall.sh
+echo "Files /root/ppparchinstall.sh and /root/chromiumforroot.sh have been written."
 echo ""
 echo ""
+echo "=================================================="
+#cat sdcardforarch/root/ppparchinstall.sh
+echo ""
+echo ""
+
+sleep 2
 
 # Root is on partition 3 not 2, informing cmdline.txt and fstab
 sed -i 's/mmcblk0p2/mmcblk0p3/g' sdcardforarch/boot/cmdline.txt
@@ -535,4 +598,6 @@ echo $start_time
 echo -e "\nFinished at: .\n"
 echo $end_time
 echo "Exiting happy."
+echo ""
+
 exit 0
