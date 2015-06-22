@@ -1,7 +1,7 @@
 #!/bin/bash
 # Advanced script to install and configure Arch with ppp on indicated sdcardforarch
 # More info and newest @ http://www.github.com/iugamarian/raspberrypisetup
-#
+# Version 1.12
 # Forked from ShorTie	<idiot@dot.com> 
 # Brought to you by iugamarian	<iugamarian@yahoo.com> 
 
@@ -381,6 +381,7 @@ echo "Conf file to load module ppp-generic:"
 echo "/etc/modules-load.d/ppp-generic.conf"
 echo "ppp-generic" > sdcardforarch/etc/modules-load.d/ppp-generic.conf
 echo ""
+
 echo "Conf file to load module snd-bcm2835:"
 echo "/etc/modules-load.d/snd-bcm2835.conf"
 echo "snd-bcm2835" > sdcardforarch/etc/modules-load.d/snd-bcm2835.conf
@@ -390,9 +391,19 @@ echo "The link to provider will be made by ppparchinstall.sh"
 echo ""
 echo "The systemd ppp enable will be made by ppparchinstall.sh"
 echo ""
+
+echo "Conf file to reduce device wear by systemd:"
+echo "/etc/systemd/journald.conf.d/disablejournald.conf"
+echo "Storage=none" > sdcardforarch/etc/systemd/journald.conf.d/20-disable-journald.conf
+echo "Seal=no" > sdcardforarch/etc/systemd/journald.conf.d/20-disable-journald.conf
+echo ""
+cat sdcardforarch/etc/systemd/journald.conf.d/20-disable-journald.conf
+echo ""
+echo ""
+
 echo "Conf file to start network in systemd before pppd:"
 echo "Actual file: /etc/systemd/system/ppp@.service.d/ppp.conf"
-echo "[Service]" > /etc/systemd/system/ppp\@.service.d/ppp.conf
+echo "[Service]" > sdcardforarch/etc/systemd/system/ppp\@.service.d/ppp.conf
 echo "ExecStartPre=/usr/bin/ip link set eth0 up" >> sdcardforarch/etc/systemd/system/ppp\@.service.d/ppp.conf
 echo ""
 echo "File /etc/systemd/system/ppp\@.service.d/ppp.conf is as follows:"
