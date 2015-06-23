@@ -11,7 +11,7 @@ sdcardforarch=/dev/sdx 			# Before running, lsblk to indicate card here
 pppusername="user"
 ppppassword="password"
 pppprovider="myisp"
-rpiversionnmumber=2			# version, not revision:  0 = autodetect, 1 = BCM2835, 2 = BCM2836
+rpiversionnumber=2			# version, not revision:  0 = autodetect, 1 = BCM2835, 2 = BCM2836
 
 # Use a minimum 8 GB card as I also make a swap partition of 1024 MB. Down in "Fdisk area".
 
@@ -55,7 +55,7 @@ if [ $rpiversionnumber -eq 0 ]; then
             version="unknown"
         fi
         
-        if [ "$rpiversion" == "unknown" ]; then
+        if [ "$rpiversion" = "unknown" ]; then
                 echo "Can't autodetect Raspberry Pi version while running on one."
                 echo "Choose rpiversionnumber=1 or rpiversionnumber=2 in configuration."
                 echo "Exiting."
@@ -306,13 +306,13 @@ echo "Downloading Arch image with wget:"
 echo ""
 echo ""
 
-if [ "$rpiversion" == "armv6h" ]; then
+if [ "$rpiversion" = "armv6h" ]; then
 wget -c http://archlinuxarm.org/os/ArchLinuxARM-rpi-latest.tar.gz
 echo "Unpacking Arch image with bsdtar... wait... (armv6h)"
 bsdtar -xpf ArchLinuxARM-rpi-latest.tar.gz -C sdcardforarch
 fi
 
-if [ "$rpiversion" == "armv7h" ]; then
+if [ "$rpiversion" = "armv7h" ]; then
 wget -c http://archlinuxarm.org/os/ArchLinuxARM-rpi-2-latest.tar.gz
 echo "Unpacking Arch image with bsdtar... wait... (armv7h)"
 bsdtar -xpf ArchLinuxARM-rpi-2-latest.tar.gz -C sdcardforarch
@@ -441,7 +441,8 @@ echo "/dev/mmcblk0p2	none      	swap      	defaults  	0 0" >> sdcardforarch/etc/
 
 echo "Configuring  ppp with information from configuration..."
 echo ""
-
+mkdir sdcardforarch/etc/ppp
+mkdir sdcardforarch/etc/ppp/peers
 echo "plugin rp-pppoe.so" > sdcardforarch/etc/ppp/peers/$pppprovider
 echo "eth0" >> sdcardforarch/etc/ppp/peers/$pppprovider
 echo "name \"$pppusername\"" >> sdcardforarch/etc/ppp/peers/$pppprovider
@@ -469,6 +470,7 @@ cat sdcardforarch/etc/ppp/peers/pap-secrets
 echo ""
 echo ""
 
+mkdir sdcardforarch/etc/modules-load.d
 echo "Conf file to load module ppp-generic:"
 echo "/etc/modules-load.d/ppp-generic.conf"
 echo "ppp-generic" > sdcardforarch/etc/modules-load.d/ppp-generic.conf
@@ -486,6 +488,7 @@ echo ""
 
 echo "Conf file to reduce device wear by systemd:"
 echo "/etc/systemd/journald.conf.d/disablejournald.conf"
+mkdir sdcardforarch/etc/systemd/journald.conf.d
 echo "Storage=none" > sdcardforarch/etc/systemd/journald.conf.d/20-disable-journald.conf
 echo "Seal=no" > sdcardforarch/etc/systemd/journald.conf.d/20-disable-journald.conf
 echo ""
@@ -495,6 +498,7 @@ echo ""
 
 echo "Conf file to start network in systemd before pppd:"
 echo "Actual file: /etc/systemd/system/ppp@.service.d/ppp.conf"
+mkdir sdcardforarch/etc/systemd/system/ppp\@.service.d
 echo "[Service]" > sdcardforarch/etc/systemd/system/ppp\@.service.d/ppp.conf
 echo "ExecStartPre=/usr/bin/ip link set eth0 up" >> sdcardforarch/etc/systemd/system/ppp\@.service.d/ppp.conf
 echo ""
@@ -505,6 +509,7 @@ echo ""
 echo ""
 echo "Conf file to stop kernel messages:"
 echo "/etc/sysctl.d/20-quiet-prink.conf"
+mkdir sdcardforarch/etc/sysctl.d
 echo "kernel.printk = 3 3 3 3" > sdcardforarch/etc/sysctl.d/20-quiet-prink.conf
 echo ""
 cat sdcardforarch/etc/sysctl.d/20-quiet-prink.conf
@@ -600,6 +605,8 @@ fixup_file=fixup_x.dat
 EOF
 
 echo "Conf /etc/X11/xorg.conf.d/50-on-flags.conf for screen always on:"; echo ""
+mkdir /etc/X11
+mkdir /etc/X11/xorg.conf.d
 cat <<EOF > /etc/X11/xorg.conf.d/50-on-flags.conf
 Section "ServerFlags"
    Option "BlankTime" "0"
