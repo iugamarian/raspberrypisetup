@@ -1,7 +1,7 @@
 #!/bin/bash
 # Advanced script to install and configure Arch with ppp on indicated sdcardforarch
 # More info and newest @ http://www.github.com/iugamarian/raspberrypisetup
-# Version 1.13 tested and it works
+# Version 1.14 tested and it works
 # Forked from ShorTie	<idiot@dot.com> 
 # Brought to you by iugamarian	<iugamarian@yahoo.com> 
 
@@ -162,6 +162,7 @@ echo ""
 echo $neededprograms
 echo ""
 echo "Exiting."
+echo ""
 exit 1
 fi
 
@@ -169,13 +170,11 @@ echo ""
 
 # Detecting availability of indicated device
 if ! (fdisk -l | grep $sdcardforarch); then
-        echo "Can't find ($sdcardforarch). Insert and indicate it."
-	echo "No files. Only devices. Exiting."
-exit 1
+    echo "Can't find ($sdcardforarch). Insert and indicate it."
+    echo "No files. Only devices. Exiting."
+    exit 1
 else
-echo ""
-echo ""
-echo "Found device $sdcardforarch."
+    echo "Found device $sdcardforarch."
 fi
 
 echo ""
@@ -271,6 +270,7 @@ bootpart="$sdcardforarch"1
 swappart="$sdcardforarch"2
 rootpart="$sdcardforarch"3
 fi
+
 echo ""
 echo -n "Boot partition is "
 echo $bootpart
@@ -352,6 +352,7 @@ echo "Downloading the packages into the installed /root dir:"
 # http://eu.mirror.archlinuxarm.org/armv7h/core/ppp-2.4.7-1-armv7h.pkg.tar.xz
 
 ######Directory changing beginning
+mkdir sdcardforarch/root
 cd sdcardforarch/root
 wget -c $linklibnl
 wget -c $linklibpcap
@@ -441,6 +442,7 @@ echo "/dev/mmcblk0p2	none      	swap      	defaults  	0 0" >> sdcardforarch/etc/
 
 echo "Configuring  ppp with information from configuration..."
 echo ""
+mkdir sdcardforarch/etc/
 mkdir sdcardforarch/etc/ppp
 mkdir sdcardforarch/etc/ppp/peers
 echo "plugin rp-pppoe.so" > sdcardforarch/etc/ppp/peers/$pppprovider
@@ -605,9 +607,9 @@ fixup_file=fixup_x.dat
 EOF
 
 echo "Conf /etc/X11/xorg.conf.d/50-on-flags.conf for screen always on:"; echo ""
-mkdir /etc/X11
-mkdir /etc/X11/xorg.conf.d
-cat <<EOF > /etc/X11/xorg.conf.d/50-on-flags.conf
+mkdir sdcardforarch/etc/X11
+mkdir sdcardforarch/etc/X11/xorg.conf.d
+cat <<EOF > sdcardforarch/etc/X11/xorg.conf.d/50-on-flags.conf
 Section "ServerFlags"
    Option "BlankTime" "0"
    Option "StandbyTime" "0"
@@ -627,11 +629,11 @@ rm core.db.tar.gz
 
 sync
 
-echo -e "\n\nCompleted.\n"
+echo "\n\nCompleted.\n"
 end_time=$(date)
-echo -e "\nStarted at: .\n"
+echo "\nStarted at: .\n"
 echo $start_time
-echo -e "\nFinished at: .\n"
+echo "\nFinished at: .\n"
 echo $end_time
 echo "Exiting happy."
 echo ""
