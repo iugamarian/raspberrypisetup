@@ -1,7 +1,7 @@
 #!/bin/bash
 # Advanced script to install and configure Arch with ppp on indicated sdcardforarch
 # More info and newest @ http://www.github.com/iugamarian/raspberrypisetup
-# Version 1.14 tested and it works
+# Version 1.16 tested and it works
 # Forked from ShorTie	<idiot@dot.com> 
 # Brought to you by iugamarian	<iugamarian@yahoo.com> 
 
@@ -11,13 +11,25 @@ sdcardforarch=/dev/sdx 			# Before running, lsblk to indicate card here
 pppusername="user"
 ppppassword="password"
 pppprovider="myisp"
-rpiversionnumber=2			# version, not revision:  0 = autodetect, 1 = BCM2835, 2 = BCM2836
+rpiversionnumber=0			# version, not revision:  0 = autodetect, 1 = BCM2835, 2 = BCM2836
 
 # Use a minimum 8 GB card as I also make a swap partition of 1024 MB. Down in "Fdisk area".
 
 #********** END Configuration **************************************************************
 
 # Noting time when started
+
+# Check to see if running as root
+echo -e "\nChecking for root."
+if [ `id -u` != 0 ]; then
+    echo "Not root."
+    echo -e "Need to be run as root.\n"
+    echo " Try 'sudo sh rpiarchppp' as a user. Exiting."
+    echo ""
+    exit 1
+else
+    echo "Root."
+fi
 start_time=$(date)
 echo ""
 echo ""
@@ -47,18 +59,17 @@ if [ $rpiversionnumber -eq 0 ]; then
         else
             rpiversion="unknown"
         fi
-        
         if [ `cat /proc/cpuinfo | grep ARMv7 |wc -c` -eq 0 ]; then
             echo "BCM2835 ARMv6 Raspberry Pi"
             rpiversion="armv6h"
         else
             version="unknown"
         fi
-        
         if [ "$rpiversion" = "unknown" ]; then
                 echo "Can't autodetect Raspberry Pi version while running on one."
                 echo "Choose rpiversionnumber=1 or rpiversionnumber=2 in configuration."
                 echo "Exiting."
+                echo ""
                 exit 1
         fi
     else
@@ -67,6 +78,7 @@ if [ $rpiversionnumber -eq 0 ]; then
         echo "Can't autodetect Raspberry Pi version when not running on one."
         echo "Choose rpiversionnumber=1 or rpiversionnumber=2 in configuration."
         echo "Exiting."
+        echo ""
         exit 1
     fi
     # End of autodetect
@@ -74,7 +86,6 @@ else
     echo "Not autodetecting Raspberry Pi version."
     # End of no autodetect message
 fi
-
 if [ $rpiversionnumber -eq 1 ]; then
     rpiversion="armv6h"
     rpiversionnrcorrect=1
@@ -83,7 +94,6 @@ if [ $rpiversionnumber -eq 2 ]; then
     rpiversion="armv7h"
     rpiversionnrcorrect=1
 fi
-
 if [ $rpiversioncorrect -eq 0 ]; then
     # Incorrect rpiversionnumber
     echo "Chosen rpiversionnumber is not 0 1 or 2."
@@ -102,25 +112,9 @@ echo ""
 echo ""
 echo "============================================================"
 echo ""
-
 sleep 2
-
-# Check to see if running as root
-echo -e "\nChecking for root."
-if [ `id -u` != 0 ]; then
-    echo "Not root."
-    echo -e "Need to be run as root.\n"
-    echo " Try 'sudo sh rpiarchppp' as a user. Exiting."
-    exit 1
-else
-    echo "Root."
-fi
-echo " "
-
 # Allowing dd to be able to clear MBR (permission)
-
 viewsudouser=`logname`
-
 if [ "$viewsudouser" != "root" ]; then
 echo "Sudo is used by $viewsudouser."
 echo "Adding user $viewsudouser to the disk group."
@@ -130,30 +124,24 @@ echo "Sudo is not used. Adding root to the disk group."
 usermod -G disk --append root
 fi
 echo ""
-
 echo "Checking for programs that are needed:"
 echo ""
-
 neededprograms=""
-
 if [ `which fdisk |wc -c` != 0 ]; then
 echo "Found fdisk."
 else
 neededprograms+="fdisk "
 fi
-
 if [ `which wget |wc -c` != 0 ]; then
 echo "Found wget."
 else
 neededprograms+="wget "
 fi
-
 if [ `which bsdtar |wc -c` != 0 ]; then
 echo "Found bsdtar."
 else
 neededprograms+="bsdtar "
 fi
-
 if [ "$neededprograms" = "" ]; then
 echo "All needed programs available."
 else
@@ -165,25 +153,21 @@ echo "Exiting."
 echo ""
 exit 1
 fi
-
 echo ""
-
 # Detecting availability of indicated device
 if ! (fdisk -l | grep $sdcardforarch); then
     echo "Can't find ($sdcardforarch). Insert and indicate it."
     echo "No files. Only devices. Exiting."
+    echo ""
     exit 1
 else
     echo "Found device $sdcardforarch."
+    echo ""
 fi
-
-echo ""
 echo ""
 echo "============================================================"
 echo ""
-
 sleep 2
-
 # Safety unmounting of possible partitions, logicals can start from 5
 echo "Unmounting partitions, up to 9, with or without p in front:"
 echo ""
@@ -205,26 +189,18 @@ umount "$sdcardforarch"p6
 umount "$sdcardforarch"p7
 umount "$sdcardforarch"p8
 umount "$sdcardforarch"p9
-
 echo ""
-
 echo "Deleting MBR and fat allocation table general area with dd:"
 # Need to dd more because fat filesystems may get confused about random
 # data in their first part where they store the fat allocation table
-
 dd if=/dev/zero of=$sdcardforarch bs=1M count=32 iflag=fullblock
-
 echo ""
 echo ""
-
 echo "Partitioning indicated device:"
 echo ""
-
 # On fdisk older than 25, setting bootable flag adds 1 after a: "a,1" < 25, "a" >= 25
 # But I follow the archlinuxarm instructions which don't set booteble flag
-
 # "Fdisk area". Be careful about the new lines (Enter).
-
 fdisk $sdcardforarch <<EOF
 o
 n
@@ -246,11 +222,8 @@ n
 
 w
 EOF
-
 # Finished partitioning. Be careful about the new lines (Enter).
-
 sleep 5
-
 echo ""
 echo "=================================================="
 echo ""
@@ -270,7 +243,6 @@ bootpart="$sdcardforarch"1
 swappart="$sdcardforarch"2
 rootpart="$sdcardforarch"3
 fi
-
 echo ""
 echo -n "Boot partition is "
 echo $bootpart
@@ -282,44 +254,34 @@ echo ""
 echo ""
 echo "Formatting partitions:"
 echo ""
-
 mkfs.vfat -n BOOTRPI $bootpart
 mkswap $swappart
 # Disabling lazy options so that all inodes get written now not bit by bit later.
 mkfs.ext4 -m 0 -L ARCHRPI -E lazy_itable_init=0,lazy_journal_init=0 $rootpart
-
 echo "Mounting partitions:"
 echo ""
-
 mkdir sdcardforarch
 mount $rootpart sdcardforarch
 mkdir sdcardforarch/boot
 mount $bootpart sdcardforarch/boot
-
 echo ""
 echo "=================================================="
 echo ""
-
 sleep 2
-
 echo "Downloading Arch image with wget:"
 echo ""
 echo ""
-
 if [ "$rpiversion" = "armv6h" ]; then
 wget -c http://archlinuxarm.org/os/ArchLinuxARM-rpi-latest.tar.gz
 echo "Unpacking Arch image with bsdtar... wait... (armv6h)"
 bsdtar -xpf ArchLinuxARM-rpi-latest.tar.gz -C sdcardforarch
 fi
-
 if [ "$rpiversion" = "armv7h" ]; then
 wget -c http://archlinuxarm.org/os/ArchLinuxARM-rpi-2-latest.tar.gz
 echo "Unpacking Arch image with bsdtar... wait... (armv7h)"
 bsdtar -xpf ArchLinuxARM-rpi-2-latest.tar.gz -C sdcardforarch
 fi
-
 sync
-
 echo "Detecting exact names for ppp package and it's dependencies:"
 echo ""
 # The version of a package changes the link when updated to a mirror
@@ -345,12 +307,6 @@ linklibnl=http://eu.mirror.archlinuxarm.org/"$rpiversion"/core/"$namelibnl"-"$rp
 linklibpcap=http://eu.mirror.archlinuxarm.org/"$rpiversion"/core/"$namelibpcap"-"$rpiversion".pkg.tar.xz
 linkppp=http://eu.mirror.archlinuxarm.org/"$rpiversion"/core/"$nameppp"-"$rpiversion".pkg.tar.xz
 echo "Downloading the packages into the installed /root dir:"
-
-# Example for reference:
-# http://eu.mirror.archlinuxarm.org/armv7h/core/libnl-3.2.25-1-armv7h.pkg.tar.xz
-# http://eu.mirror.archlinuxarm.org/armv7h/core/libpcap-1.6.2-1-armv7h.pkg.tar.xz
-# http://eu.mirror.archlinuxarm.org/armv7h/core/ppp-2.4.7-1-armv7h.pkg.tar.xz
-
 ######Directory changing beginning
 mkdir sdcardforarch/root
 cd sdcardforarch/root
@@ -368,40 +324,34 @@ echo "pacman -U $nameppp-$rpiversion.pkg.tar.xz" >> ppparchinstall.sh
 #echo "modprobe ppp-generic" >> ppparchinstall.sh
 #echo "modprobe snd-bcm2835" >> ppparchinstall.sh
 echo "ln -s /etc/ppp/peers/$pppprovider /etc/ppp/peers/provider" >> ppparchinstall.sh
-
-#Systemd doesn't do daemon-reload unless the changed services are disabled and stopped twice
-
-echo "systemctl disable ppp@.service" >> ppparchinstall.sh
-echo "systemctl disable ppp@$pppprovider.service" >> ppparchinstall.sh
+#Systemd doesn't do daemon-reload unless the changed services are stopped and disabled
 echo "systemctl stop ppp@.service" >> ppparchinstall.sh
 echo "systemctl stop ppp@$pppprovider.service" >> ppparchinstall.sh
+echo "systemctl disable ppp@.service" >> ppparchinstall.sh
+echo "systemctl disable ppp@$pppprovider.service" >> ppparchinstall.sh
 echo "sleep 1" >> ppparchinstall.sh
 echo "systemctl daemon-reload" >> ppparchinstall.sh
 echo "sleep 5" >> ppparchinstall.sh
-
-#Second time after a daemon-reload...
-
-echo "systemctl disable ppp@.service" >> ppparchinstall.sh
-echo "systemctl disable ppp@$pppprovider.service" >> ppparchinstall.sh
-echo "systemctl stop ppp@.service" >> ppparchinstall.sh
-echo "systemctl stop ppp@$pppprovider.service" >> ppparchinstall.sh
-echo "sleep 1" >> ppparchinstall.sh
-
-# And then after another daemon-reload it works... I think
-
-echo "systemctl daemon-reload" >> ppparchinstall.sh
-echo "sleep 5" >> ppparchinstall.sh
-echo "systemctl enable ppp@$pppprovider.service" >> ppparchinstall.sh
-echo "systemctl start ppp@$pppprovider.service" >> ppparchinstall.sh
 echo "systemctl enable systemd-networkd" >> ppparchinstall.sh
 echo "systemctl start systemd-networkd" >> ppparchinstall.sh
 echo "systemctl enable systemd-timesyncd" >> ppparchinstall.sh
 echo "systemctl start systemd-timesyncd" >> ppparchinstall.sh
+echo "systemctl enable ppp@$pppprovider.service" >> ppparchinstall.sh
+echo "systemctl start ppp@$pppprovider.service" >> ppparchinstall.sh
+#Systemd needs another daemon-reload if started a daemon with @$provider
+echo "systemctl stop ppp@.service" >> ppparchinstall.sh
+echo "systemctl stop ppp@$pppprovider.service" >> ppparchinstall.sh
+echo "systemctl disable ppp@.service" >> ppparchinstall.sh
+echo "systemctl disable ppp@$pppprovider.service" >> ppparchinstall.sh
 echo "sleep 1" >> ppparchinstall.sh
+echo "systemctl daemon-reload" >> ppparchinstall.sh
+echo "sleep 5" >> ppparchinstall.sh
+echo "systemctl enable ppp@$pppprovider.service" >> ppparchinstall.sh
+echo "systemctl start ppp@$pppprovider.service" >> ppparchinstall.sh
+echo "sleep 5" >> ppparchinstall.sh
+echo "pacman -Syu" >> ppparchinstall.sh
 echo "sync" >> ppparchinstall.sh
-
 echo "exec startlxde" > .xinitrc
-
 echo '#!/bin/bash' > chromiumforroot.sh
 echo "pacman -Syu" >> chromiumforroot.sh
 echo "pacman -S chromium xf86-video-fbturbo-git arch-install-scripts dosfstools urar uzip unarj p7zip gzip bzip2 xarchiver pkgfile fdisk parted mkinitcpio upower ttf-dejavu xorg-server xorg-xinit lxde leafpad chromium youtube-dl kodi-rbp omxplayer transmission-gtk audacious mc openra yaourt libnewt newt-syrup gimp libreoffice-still jre8-openjdk jdk8-openjdk xsane openssh openssl libksane xsane-gimp inkscape timidity++ timidity-freepats gparted imagemagick libbcm2835 wiringpi espeak mpg123 flac lame phonon-qtp-gstreamer kactivities4 krita alsa-utils alsa-plugins pulseaudio pulseaudio-alsa paprefs pavucontrol" >> chromiumforroot.sh
@@ -424,7 +374,6 @@ echo "chown 777 ../var/cache/chromiumdir" >> chromiumforroot.sh
 echo "sync" > chromiumforroot.sh
 cd ../../
 ######Directory changing ending
-
 echo "Files /root/ppparchinstall.sh and /root/chromiumforroot.sh have been written."
 echo ""
 echo ""
@@ -432,14 +381,12 @@ echo "=================================================="
 #cat sdcardforarch/root/ppparchinstall.sh
 echo ""
 echo ""
-
+sync
 sleep 2
-
 # Root is on partition 3 not 2, informing cmdline.txt and fstab
 sed -i 's/mmcblk0p2/mmcblk0p3/g' sdcardforarch/boot/cmdline.txt
 sed -i 's/mmcblk0p2/mmcblk0p3/g' sdcardforarch/etc/fstab
 echo "/dev/mmcblk0p2	none      	swap      	defaults  	0 0" >> sdcardforarch/etc/fstab
-
 echo "Configuring  ppp with information from configuration..."
 echo ""
 mkdir sdcardforarch/etc/
@@ -454,30 +401,24 @@ echo "defaultroute" >> sdcardforarch/etc/ppp/peers/$pppprovider
 echo "hide-password" >> sdcardforarch/etc/ppp/peers/$pppprovider
 echo "noauth" >> sdcardforarch/etc/ppp/peers/$pppprovider
 echo "" >> sdcardforarch/etc/ppp/peers/$pppprovider
-
 echo "File /etc/ppp/peers/$pppprovider is as follows:"
 echo ""
 cat sdcardforarch/etc/ppp/peers/$pppprovider
 echo ""
 echo ""
-
 echo "\"$pppusername\"	*	\"$ppppassword\"" > sdcardforarch/etc/ppp/pap-secrets
-
 # For safety I will copy pap-secrets to also chap-secrets
 cp sdcardforarch/etc/ppp/pap-secrets sdcardforarch/etc/ppp/chap-secrets
-
 echo "File /etc/ppp/peers/pap-secrets and chap-secrets are as follows:"
 echo ""
 cat sdcardforarch/etc/ppp/peers/pap-secrets
 echo ""
 echo ""
-
 mkdir sdcardforarch/etc/modules-load.d
 echo "Conf file to load module ppp-generic:"
 echo "/etc/modules-load.d/ppp-generic.conf"
 echo "ppp-generic" > sdcardforarch/etc/modules-load.d/ppp-generic.conf
 echo ""
-
 echo "Conf file to load module snd-bcm2835:"
 echo "/etc/modules-load.d/snd-bcm2835.conf"
 echo "snd-bcm2835" > sdcardforarch/etc/modules-load.d/snd-bcm2835.conf
@@ -487,7 +428,6 @@ echo "The link to provider will be made by ppparchinstall.sh"
 echo ""
 echo "The systemd ppp enable will be made by ppparchinstall.sh"
 echo ""
-
 echo "Conf file to reduce device wear by systemd:"
 echo "/etc/systemd/journald.conf.d/disablejournald.conf"
 mkdir sdcardforarch/etc/systemd/journald.conf.d
@@ -497,7 +437,6 @@ echo ""
 cat sdcardforarch/etc/systemd/journald.conf.d/20-disable-journald.conf
 echo ""
 echo ""
-
 echo "Conf file to start network in systemd before pppd:"
 echo "Actual file: /etc/systemd/system/ppp@.service.d/ppp.conf"
 mkdir sdcardforarch/etc/systemd/system/ppp\@.service.d
@@ -528,25 +467,20 @@ vm.dirty_bytes = 8388608
 vm.dirty_background_bytes = 8388608
 vm.dirty_writeback_centisecs = 600
 vm.dirty_expire_centisecs = 600
-
 # In other words the seven optimizations do this, in their order, each in paranthesis:
 #		(keep caches medium and swap low), (keep a free memory of 8 MB), (keep a
 #		medium amount of file information in cache), (processes write after reaching
 #		8MB in their memory) to a (cache of 8 MB in size), in which (old data is
 #		written every 6 seconds) and (data is considered old after 6 seconds).
-
 EOF
-
-cat sdcardforarch/etc/sysctl.d/30-rpi-optimizations.conf
+#cat sdcardforarch/etc/sysctl.d/30-rpi-optimizations.conf
 echo ""
 echo ""
-
 echo "Creating config.txt"; echo ""
 cat <<EOF > sdcardforarch/boot/config.txt
 # For more options and information see 
 # http://www.raspberrypi.org/documentation/configuration/config-txt.md
 # Some settings may impact device functionality. See link above for details
-
 # uncomment if you get no picture on HDMI for a default "safe" mode
 #hdmi_safe=1
 
@@ -603,7 +537,6 @@ framebuffer_depth=24
 # For camera and webm
 start_file=start_x.elf
 fixup_file=fixup_x.dat
-
 EOF
 
 echo "Conf /etc/X11/xorg.conf.d/50-on-flags.conf for screen always on:"; echo ""
@@ -631,10 +564,11 @@ sync
 
 echo "\n\nCompleted.\n"
 end_time=$(date)
-echo "\nStarted at: .\n"
+echo "\nStarted at:\n"
 echo $start_time
-echo "\nFinished at: .\n"
+echo "\nFinished at:\n"
 echo $end_time
+echo ""
 echo "Exiting happy."
 echo ""
 
