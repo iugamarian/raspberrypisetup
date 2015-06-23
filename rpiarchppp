@@ -1,10 +1,9 @@
 #!/bin/bash
 # Advanced script to install and configure Arch with ppp on indicated sdcardforarch
 # More info and newest @ http://www.github.com/iugamarian/raspberrypisetup
-# Version 1.16 tested and it works
+# Version 1.17 tested and it works
 # Forked from ShorTie	<idiot@dot.com> 
 # Brought to you by iugamarian	<iugamarian@yahoo.com> 
-
 # Configuration - choose here carefuly 
 
 sdcardforarch=/dev/sdx 			# Before running, lsblk to indicate card here
@@ -17,8 +16,6 @@ rpiversionnumber=0			# version, not revision:  0 = autodetect, 1 = BCM2835, 2 = 
 
 #********** END Configuration **************************************************************
 
-# Noting time when started
-
 # Check to see if running as root
 echo -e "\nChecking for root."
 if [ `id -u` != 0 ]; then
@@ -30,6 +27,7 @@ if [ `id -u` != 0 ]; then
 else
     echo "Root."
 fi
+# Noting time when started
 start_time=$(date)
 echo ""
 echo ""
@@ -477,68 +475,22 @@ EOF
 echo ""
 echo ""
 echo "Creating config.txt"; echo ""
+cp sdcardforarch/boot/config.txt sdcardforarch/boot/configold.txt
 cat <<EOF > sdcardforarch/boot/config.txt
-# For more options and information see 
-# http://www.raspberrypi.org/documentation/configuration/config-txt.md
-# Some settings may impact device functionality. See link above for details
-# uncomment if you get no picture on HDMI for a default "safe" mode
-#hdmi_safe=1
-
-# uncomment this if your display has a black border of unused pixels visible
-# and your display can output without overscan
-#disable_overscan=1
-
-# uncomment the following to adjust overscan. Use positive numbers if console
-# goes off screen, and negative if there is too much border
-#overscan_left=16
-#overscan_right=16
-#overscan_top=16
-#overscan_bottom=16
-
-# uncomment to force a console size. By default it will be display's size minus
-# overscan.
-#framebuffer_width=1280
-#framebuffer_height=720
-
-# uncomment if hdmi display is not detected and composite is being output
-#hdmi_force_hotplug=1
-
-# uncomment to force a specific HDMI mode (this will force VGA)
-#hdmi_group=1
-#hdmi_mode=1
-
-# uncomment to force a HDMI mode rather than DVI. This can make audio work in
-# DMT (computer monitor) modes
-#hdmi_drive=2
-
-# uncomment to increase signal to HDMI, if you have interference, blanking, or
-# no display
-#config_hdmi_boost=4
-
-# uncomment for composite PAL
-#sdtv_mode=2
-
-#uncomment to overclock the arm. 700 MHz is the default.
-#arm_freq=800
-
+#The other commented options in config.txt.old
 #Rezolution 1280x1024 @ 60 Hz
 hdmi_group=2
 hdmi_mode=35
-
-For DVI it's 1, for HDMI with sound it's 2
-#hdmi_drive=1
+#Option hdmi_drive for DVI it's 1, for HDMI with sound (TV, adapter) it's 2
 hdmi_drive=2
-
 hdmi_force_edid_audio=1
 hdmi_force_hotplug=1
 gpu_mem=256
 framebuffer_depth=24
-
 # For camera and webm
 start_file=start_x.elf
 fixup_file=fixup_x.dat
 EOF
-
 echo "Conf /etc/X11/xorg.conf.d/50-on-flags.conf for screen always on:"; echo ""
 mkdir sdcardforarch/etc/X11
 mkdir sdcardforarch/etc/X11/xorg.conf.d
@@ -549,19 +501,16 @@ Section "ServerFlags"
    Option "SuspendTime" "0"
    Option "OffTime" "0"
 EndSection
-
 EOF
-
+cp sdcardforarch/boot/config.txt sdcardforarch/boot/confignew.txt
+### When config.txt is lost, cp /boot/confignew.txt config.txt
 sync
-
 umount $bootpart
 umount $rootpart
 rm -rf sdcardforarch
 rm -rf archcoredbextract
 rm core.db.tar.gz
-
 sync
-
 echo "\n\nCompleted.\n"
 end_time=$(date)
 echo "\nStarted at:\n"
@@ -571,5 +520,4 @@ echo $end_time
 echo ""
 echo "Exiting happy."
 echo ""
-
 exit 0
