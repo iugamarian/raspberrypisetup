@@ -11,7 +11,7 @@ sdcardforarch=/dev/sdx 			# Before running, lsblk to indicate card here
 pppusername="user"
 ppppassword="password"
 pppprovider="myisp"
-inversatepi=0				# If set to 1, will write for the other architecture
+rpiversionnmumber=2			# version, not revision:  0 = autodetect, 1 = BCM2835, 2 = BCM2836
 
 # Use a minimum 8 GB card as I also make a swap partition of 1024 MB. Down in "Fdisk area".
 
@@ -19,51 +19,80 @@ inversatepi=0				# If set to 1, will write for the other architecture
 
 # Noting time when started
 start_time=$(date)
-
 echo ""
 echo ""
-
 # Pi check
 if [ `cat /proc/cpuinfo | grep BCM |wc -c` -eq 0 ]; then
-    echo "Not running on a Raspberry Pi. I need that for installing ppp. Exiting."
-    exit 1
+    echo "Not running on a Raspberry Pi."
+    rpirunningon=0
+#   exit 1
 else
-    echo "Running on a Raspberry Pi"
+    echo "Running on a Raspberry Pi."
+    rpirunningon=1
 fi
-
 echo ""
-
-echo "The the cpu of this Raspberry Pi is:"
-echo ""
-
-if [ `cat /proc/cpuinfo | grep ARMv6 |wc -c` -eq 0 ]; then
-    echo "BCM2836 ARMv7 Raspberry Pi 2"
-    rpiversion="armv7h"
-else
-    rpiversion="unknown"
-fi
-
-if [ `cat /proc/cpuinfo | grep ARMv7 |wc -c` -eq 0 ]; then
-    echo "BCM2835 ARMv6 Raspberry Pi"
-    rpiversion="armv6h"
-else
-    version="unknown"
-fi
-
-if [ "$rpiversion" == "unknown" ]; then
-    echo "Can't detect version. Is this a Raspberry Pi 3 ? Modify the script. Exiting."
-    exit 1
-fi
-
-if [ $inversatepi -eq 1 ]; then
-    echo ""
-    echo "Inversating arhitecture..."
-    if [ "$rpiversion" == "armv6h" ]; then
-       rpiversion="armv7h"
-       else
-       rpiversion="armv6h"
+rpiversionnrcorrect=0
+#Selecting version
+if [ $rpiversionnumber -eq 0 ]; then
+    # Autodetect
+    rpiversionnrcorrect=1
+    echo "Autodetecting Raspberry Pi version..."
+    if [ $rpirunningon -eq 1 ]; then
+        # Running on a Pi or Pi 2 during autodetect
+        echo "The the cpu of this Raspberry Pi is:"
+        echo ""
+        if [ `cat /proc/cpuinfo | grep ARMv6 |wc -c` -eq 0 ]; then
+            echo "BCM2836 ARMv7 Raspberry Pi 2"
+            rpiversion="armv7h"
+        else
+            rpiversion="unknown"
+        fi
+        
+        if [ `cat /proc/cpuinfo | grep ARMv7 |wc -c` -eq 0 ]; then
+            echo "BCM2835 ARMv6 Raspberry Pi"
+            rpiversion="armv6h"
+        else
+            version="unknown"
+        fi
+        
+        if [ "$rpiversion" == "unknown" ]; then
+                echo "Can't autodetect Raspberry Pi version while running on one."
+                echo "Choose rpiversionnumber=1 or rpiversionnumber=2 in configuration."
+                echo "Exiting."
+                exit 1
+        fi
+    else
+        # Not running on Pi or Pi 2 during autodetect
+        echo ""
+        echo "Can't autodetect Raspberry Pi version when not running on one."
+        echo "Choose rpiversionnumber=1 or rpiversionnumber=2 in configuration."
+        echo "Exiting."
+        exit 1
     fi
+    # End of autodetect
+else
+    echo "Not autodetecting Raspberry Pi version."
+    # End of no autodetect message
 fi
+
+if [ $rpiversionnumber -eq 1 ]; then
+    rpiversion="armv6h"
+    rpiversionnrcorrect=1
+fi
+if [ $rpiversionnumber -eq 2 ]; then
+    rpiversion="armv7h"
+    rpiversionnrcorrect=1
+fi
+
+if [ $rpiversioncorrect -eq 0 ]; then
+    # Incorrect rpiversionnumber
+    echo "Chosen rpiversionnumber is not 0 1 or 2."
+    echo "Choose rpiversionnumber=1 or rpiversionnumber=2 in configuration."
+    echo "Exiting."
+    echo ""
+    exit 1
+fi
+# End of selecting version
 echo ""
 echo "Selected Arch architecture is:"
 echo ""
@@ -285,7 +314,7 @@ fi
 
 if [ "$rpiversion" == "armv7h" ]; then
 wget -c http://archlinuxarm.org/os/ArchLinuxARM-rpi-2-latest.tar.gz
-echo "Unpacking Arch image with bsdtar... wait... (armv7h)
+echo "Unpacking Arch image with bsdtar... wait... (armv7h)"
 bsdtar -xpf ArchLinuxARM-rpi-2-latest.tar.gz -C sdcardforarch
 fi
 
