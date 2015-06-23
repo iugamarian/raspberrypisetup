@@ -6,10 +6,10 @@
 # Brought to you by iugamarian	<iugamarian@yahoo.com> 
 # Configuration - choose here carefuly 
 
-sdcardforarch=/dev/sdx 			# Before running, lsblk to indicate card here
-pppusername="user"
-ppppassword="password"
-pppprovider="myisp"
+sdcardforarch=/dev/sda 			# Before running, lsblk to indicate card here
+pppusername="userppp"
+ppppassword="passwordppp"
+pppprovider="ispname"
 rpiversionnumber=0			# version, not revision:  0 = autodetect, 1 = BCM2835, 2 = BCM2836
 
 # Use a minimum 8 GB card as I also make a swap partition of 1024 MB. Down in "Fdisk area".
@@ -256,6 +256,7 @@ mkfs.vfat -n BOOTRPI $bootpart
 mkswap $swappart
 # Disabling lazy options so that all inodes get written now not bit by bit later.
 mkfs.ext4 -m 0 -L ARCHRPI -E lazy_itable_init=0,lazy_journal_init=0 $rootpart
+echo ""
 echo "Mounting partitions:"
 echo ""
 mkdir sdcardforarch
@@ -280,6 +281,7 @@ echo "Unpacking Arch image with bsdtar... wait... (armv7h)"
 bsdtar -xpf ArchLinuxARM-rpi-2-latest.tar.gz -C sdcardforarch
 fi
 sync
+echo ""
 echo "Detecting exact names for ppp package and it's dependencies:"
 echo ""
 # The version of a package changes the link when updated to a mirror
@@ -304,6 +306,7 @@ echo $nameppp
 linklibnl=http://eu.mirror.archlinuxarm.org/"$rpiversion"/core/"$namelibnl"-"$rpiversion".pkg.tar.xz
 linklibpcap=http://eu.mirror.archlinuxarm.org/"$rpiversion"/core/"$namelibpcap"-"$rpiversion".pkg.tar.xz
 linkppp=http://eu.mirror.archlinuxarm.org/"$rpiversion"/core/"$nameppp"-"$rpiversion".pkg.tar.xz
+echo ""
 echo "Downloading the packages into the installed /root dir:"
 ######Directory changing beginning
 mkdir sdcardforarch/root
@@ -311,6 +314,7 @@ cd sdcardforarch/root
 wget -c $linklibnl
 wget -c $linklibpcap
 wget -c $linkppp
+echo ""
 echo "Generating script ppparchinstall.sh for offline install of ppp:"
 #Back to the names now... adding the -armv7h.pkg.tar.xz though
 echo '#!/bin/bash' > ppparchinstall.sh
@@ -409,7 +413,7 @@ echo "\"$pppusername\"	*	\"$ppppassword\"" > sdcardforarch/etc/ppp/pap-secrets
 cp sdcardforarch/etc/ppp/pap-secrets sdcardforarch/etc/ppp/chap-secrets
 echo "File /etc/ppp/peers/pap-secrets and chap-secrets are as follows:"
 echo ""
-cat sdcardforarch/etc/ppp/peers/pap-secrets
+cat sdcardforarch/etc/ppp/pap-secrets
 echo ""
 echo ""
 mkdir sdcardforarch/etc/modules-load.d
@@ -430,7 +434,7 @@ echo "Conf file to reduce device wear by systemd:"
 echo "/etc/systemd/journald.conf.d/disablejournald.conf"
 mkdir sdcardforarch/etc/systemd/journald.conf.d
 echo "Storage=none" > sdcardforarch/etc/systemd/journald.conf.d/20-disable-journald.conf
-echo "Seal=no" > sdcardforarch/etc/systemd/journald.conf.d/20-disable-journald.conf
+echo "Seal=no" >> sdcardforarch/etc/systemd/journald.conf.d/20-disable-journald.conf
 echo ""
 cat sdcardforarch/etc/systemd/journald.conf.d/20-disable-journald.conf
 echo ""
@@ -477,7 +481,7 @@ echo ""
 echo "Creating config.txt"; echo ""
 cp sdcardforarch/boot/config.txt sdcardforarch/boot/configold.txt
 cat <<EOF > sdcardforarch/boot/config.txt
-#The other commented options in config.txt.old
+#The other commented options are in config.txt.old
 #Rezolution 1280x1024 @ 60 Hz
 hdmi_group=2
 hdmi_mode=35
@@ -509,13 +513,17 @@ umount $bootpart
 umount $rootpart
 rm -rf sdcardforarch
 rm -rf archcoredbextract
+# Keeping Arch image
 rm core.db.tar.gz
 sync
-echo "\n\nCompleted.\n"
+echo "Completed."
+echo ""
 end_time=$(date)
-echo "\nStarted at:\n"
+echo "Started at:"
+echo ""
 echo $start_time
-echo "\nFinished at:\n"
+echo "Finished at:"
+echo ""
 echo $end_time
 echo ""
 echo "Exiting happy."
