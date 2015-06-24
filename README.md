@@ -1,9 +1,11 @@
 # raspberrypisetup
-Setup scripts to personalize Raspbian for my needs.
+Setup scripts to personalize Raspbian or ArchLinuxARM for my needs.
 
 Anyone can fork my scripts and make them their own, changing them as they want.
 
 After the first boot of a freshly installed Raspbian and completing raspi-config I run:
+
+sh rpiarchppp      - To install Arch on card with ppp support and further install scripts in root
 
 sh rpira           - To install my modified programs (made with "sh compilaredeb" on another install
                      of raspbian connected to tor internet) without internet connection and configure
