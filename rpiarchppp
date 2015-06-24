@@ -484,6 +484,7 @@ echo ""
 echo "Conf file to reduce device wear by systemd:"
 echo "/etc/systemd/journald.conf.d/disablejournald.conf"
 mkdir sdcardforarch/etc/systemd/journald.conf.d
+echo "[Journal]" > sdcardforarch/etc/systemd/journald.conf.d/20-disable-journald.conf
 echo "Storage=none" > sdcardforarch/etc/systemd/journald.conf.d/20-disable-journald.conf
 echo "Seal=no" >> sdcardforarch/etc/systemd/journald.conf.d/20-disable-journald.conf
 echo ""
