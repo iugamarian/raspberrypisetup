@@ -1,15 +1,15 @@
 #!/bin/bash
 # Advanced script to install and configure Arch with ppp on indicated sdcardforarch
 # More info and newest @ http://www.github.com/iugamarian/raspberrypisetup
-# Version 1.19 tested and it works
+# Version 1.20 tested and it works
 # Forked from ShorTie	<idiot@dot.com> 
 # Brought to you by iugamarian	<iugamarian@yahoo.com> 
 # Configuration - choose here carefuly 
 
-sdcardforarch=/dev/sda 			# Before running, lsblk to indicate card here
+sdcardforarch=/dev/sdx 			# Before running, lsblk to indicate card here
 pppusername="userppp"
-ppppassword="passwordppp"
-pppprovider="ispname"
+ppppassword="passwdppp"
+pppprovider="isp"
 rpiversionnumber=0			# version, not revision:  0 = autodetect, 1 = BCM2835, 2 = BCM2836
 
 # Use a minimum 8 GB card as I also make a swap partition of 1024 MB. Down in "Fdisk area".
@@ -41,11 +41,11 @@ else
     rpirunningon=1
 fi
 echo ""
-rpiversionnrcorrect=0
+rpiversioncorrect=0
 #Selecting version
 if [ $rpiversionnumber -eq 0 ]; then
     # Autodetect
-    rpiversionnrcorrect=1
+    rpiversioncorrect=1
     echo "Autodetecting Raspberry Pi version..."
     if [ $rpirunningon -eq 1 ]; then
         # Running on a Pi or Pi 2 during autodetect
@@ -86,11 +86,11 @@ else
 fi
 if [ $rpiversionnumber -eq 1 ]; then
     rpiversion="armv6h"
-    rpiversionnrcorrect=1
+    rpiversioncorrect=1
 fi
 if [ $rpiversionnumber -eq 2 ]; then
     rpiversion="armv7h"
-    rpiversionnrcorrect=1
+    rpiversioncorrect=1
 fi
 if [ $rpiversioncorrect -eq 0 ]; then
     # Incorrect rpiversionnumber
