@@ -1,7 +1,7 @@
 #!/bin/bash
 # Advanced script to install and configure Arch with ppp on indicated sdcardforarch
 # More info and newest @ http://www.github.com/iugamarian/raspberrypisetup
-# Version 1.18 tested and it works
+# Version 1.19 tested and it works
 # Forked from ShorTie	<idiot@dot.com> 
 # Brought to you by iugamarian	<iugamarian@yahoo.com> 
 # Configuration - choose here carefuly 
@@ -315,7 +315,7 @@ wget -c $linklibnl
 wget -c $linklibpcap
 wget -c $linkppp
 echo ""
-echo "Generating script install1ppp.sh for offline install of ppp:"
+echo "Generating install scripts install* to run after login:"
 #Back to the names now... adding the -armv7h.pkg.tar.xz though
 # ... for #!/bin/bash if I put "" gives me an error because of the !
 echo '#!/bin/bash' > install1ppp.sh
@@ -327,45 +327,75 @@ sleep 1
 ln -s /etc/ppp/peers/$pppprovider /etc/ppp/peers/provider
 sleep 1
 cp /etc/ppp/pap-secrets.pacorig /etc/ppp/pap-secrets
-cp /etc/ppp/chap-secrets.pacorig /etc/ppp/chapsecrets
+cp /etc/ppp/chap-secrets.pacorig /etc/ppp/chap-secrets
 sync
-sleep 3
+sleep 1
 systemctl daemon-reload
-sleep 5
-sync
 sleep 3
+sync
+sleep 2
 systemctl stop systemd-networkd
 systemctl disable systemd-networkd
 systemctl stop systemd-timesyncd
 systemctl disable systemd-timesyncd
-systemctl stop ppp@rds.service
-systemctl disable ppp@rds.service
-sleep 3
+systemctl stop ppp@$pppprovider.service
+systemctl disable ppp@$pppprovider.service
+sleep 2
 systemctl daemon-reload
-sleep 5
-sync
 sleep 3
+sync
+sleep 2
 systemctl enable systemd-networkd
 systemctl start systemd-networkd
 systemctl enable systemd-timesyncd
 systemctl start systemd-timesyncd
-systemctl enable ppp@rds.service
-systemctl start ppp@rds.service
-sleep 5
-sync
+systemctl enable ppp@$pppprovider.service
+systemctl start ppp@$pppprovider.service
 sleep 3
+sync
+sleep 2
 systemctl daemon-reload
-sleep 5
-sync
 sleep 3
+sync
+sleep 2
+sed -i 's/Server = http:\/\/mirror.archlinuxarm.org\/$arch\/$repo/#Server = http:\/\/mirror.archlinuxarm.org\/$arch\/$repo/g' ../etc/pacman.d/mirrorlist
+sed -i 's/# Server = http:\/\/eu.mirror.archlinuxarm.org\/$arch\/$repo/Server = http:\/\/eu.mirror.archlinuxarm.org\/$arch\/$repo/g' ../etc/pacman.d/mirrorlist
+sleep 2
+sync
+EOF
+# ... for #!/bin/bash if I put "" gives me an error because of the !
+echo '#!/bin/bash' > install2update.sh
+cat <<EOF >> install2update.sh
+sleep 2
+systemctl daemon-reload
+sleep 3
+sync
+sleep 2
+systemctl stop ppp@$pppprovider.service
+systemctl disable ppp@$pppprovider.service
+sleep 2
+systemctl daemon-reload
+sleep 3
+sync
+sleep 2
+systemctl enable ppp@$pppprovider.service
+systemctl start ppp@$pppprovider.service
+sleep 3
+sync
+sleep 2
+systemctl daemon-reload
+sleep 3
+sync
+sleep 2
 pacman -Syu
 sync
 EOF
 # ... for #!/bin/bash if I put "" gives me an error because of the !
-echo '#!/bin/bash' > install2.sh
-cat <<EOF >> install2lxde.sh
+echo '#!/bin/bash' > install3lxde.sh
+cat <<EOF >> install3lxde.sh
 pacman -Syu
-pacman -S chromium xf86-video-fbturbo-git arch-install-scripts dosfstools urar uzip unarj p7zip gzip bzip2 xarchiver pkgfile fdisk parted mkinitcpio upower ttf-dejavu xorg-server xorg-xinit lxde leafpad chromium youtube-dl kodi-rbp omxplayer transmission-gtk audacious mc openra yaourt libnewt newt-syrup gimp libreoffice-still jre8-openjdk jdk8-openjdk xsane openssh openssl libksane xsane-gimp inkscape timidity++ timidity-freepats gparted imagemagick libbcm2835 wiringpi espeak mpg123 flac lame phonon-qtp-gstreamer kactivities4 krita alsa-utils alsa-plugins pulseaudio pulseaudio-alsa paprefs pavucontrol
+pacman -S chromium mesa-libgl phonon-qt4-vlc xf86-video-fbturbo-git arch-install-scripts dosfstools unarj p7zip gzip bzip2 xarchiver pkgfile parted mkinitcpio upower ttf-dejavu xorg-server xorg-xinit leafpad chromium youtube-dl kodi-rbp omxplayer transmission-gtk audacious mc openra libnewt newt-syrup gimp libreoffice-still jre8-openjdk jdk8-openjdk xsane openssh openssl libksane xsane-gimp inkscape timidity++ timidity-freepats gparted imagemagick libbcm2835 wiringpi espeak mpg123 flac lame kactivities4 alsa-utils alsa-plugins pulseaudio pulseaudio-alsa paprefs pavucontrol
+pacman -S gpicview lxappearance lxappearance-obconf lxde-common lxde-icon-theme lxdm lxinput lxlauncher lxmenu-data lxmusic lxpanel lxrandr lxsession lxtask lxterminal openbox pcmanfm
 sleep 2
 sync
 sleep 2
@@ -374,9 +404,10 @@ pkgfile --update
 sleep 2
 sed -i 's/load-module module-suspend-on-idle/#load-module module-suspend-on-idle/g' ../etc/pulse/default.pa
 sed -i 's/load-module module-suspend-on-idle/#load-module module-suspend-on-idle/g' ../etc/pulse/system.pa
-echo "flat-volumes = no" >> ../etc/system/default.pa
-echo "high-priority = no" >> ../etc/system/default.pa
-echo "nice-level = -1" >> ../etc/system/default.pa
+echo "flat-volumes = no" >> ../etc/pulse/daemon.conf
+echo "high-priority = no" >> ../etc/pulse/daemon.conf
+echo "nice-level = -1" >> ../etc/pulse/daemon.conf
+echo "no-cpu-limit = yes" >> ../etc/pulse/daemon.conf
 sleep 3
 systemctl daemon-reload
 sleep 5
@@ -397,11 +428,10 @@ sync
 EOF
 cd ../../
 ######Directory changing ending
-echo "Files /root/install1.sh and /root/install2.sh have been written."
+echo "Files /root/install* have been written."
 echo ""
 echo ""
 echo "=================================================="
-#cat sdcardforarch/root/install1.sh
 echo ""
 echo ""
 sync
