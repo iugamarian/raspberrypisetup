@@ -320,6 +320,7 @@ echo "Generating install scripts install* to run after login:"
 # ... for #!/bin/bash if I put "" gives me an error because of the !
 echo '#!/bin/bash' > install1ppp.sh
 cat <<EOF >> install1ppp.sh
+echo ""
 pacman -U $namelibnl-$rpiversion.pkg.tar.xz
 pacman -U $namelibpcap-$rpiversion.pkg.tar.xz
 pacman -U $nameppp-$rpiversion.pkg.tar.xz
@@ -362,6 +363,7 @@ EOF
 # ... for #!/bin/bash if I put "" gives me an error because of the !
 echo '#!/bin/bash' > install2update.sh
 cat <<EOF >> install2update.sh
+echo ""
 sleep 2
 systemctl daemon-reload
 sleep 5
@@ -390,6 +392,7 @@ EOF
 # ... for #!/bin/bash if I put "" gives me an error because of the !
 echo '#!/bin/bash' > install3lxde.sh
 cat <<EOF >> install3lxde.sh
+echo ""
 pacman -Syu
 pacman -S chromium mesa-libgl phonon-qt4-vlc xf86-video-fbturbo-git arch-install-scripts dosfstools unarj p7zip gzip bzip2 xarchiver pkgfile parted mkinitcpio upower ttf-dejavu xorg-server xorg-xinit leafpad chromium youtube-dl kodi-rbp omxplayer transmission-gtk audacious mc openra libnewt newt-syrup gimp libreoffice-still jre8-openjdk jdk8-openjdk xsane openssh openssl libksane xsane-gimp inkscape timidity++ timidity-freepats gparted imagemagick libbcm2835 wiringpi espeak mpg123 flac lame kactivities4 alsa-utils alsa-plugins pulseaudio pulseaudio-alsa paprefs pavucontrol gpicview lxappearance lxappearance-obconf lxde-common lxde-icon-theme lxdm lxinput lxlauncher lxmenu-data lxmusic lxpanel lxrandr lxsession lxtask lxterminal openbox pcmanfm git wget libx264
 sleep 2
@@ -420,6 +423,39 @@ amixer cset numid=3 -- 90%
 sed -i 's/chromium %U/chromium --user-data-dir \/var\/cache\/chromiumdir %U/g' ../usr/share/applications/chromium.desktop
 mkdir ../var/cache/chromiumdir
 chown 777 ../var/cache/chromiumdir
+sync
+EOF
+cat <<EOF >> install4autologinroot.sh
+systemctl stop sshd.service
+systemctl disable sshd.service
+echo ""
+echo "Wait..."
+sleep 1
+sync
+sleep 1
+systemctl daemon-reload
+sleep 5
+sync
+sleep 3
+rm /etc/systemd/system/getty.target.wants/getty@tty1.service
+cp /lib/systemd/system/getty@.service /etc/systemd/system/getty@tty1.service
+sed -i 's/ExecStart=-\/sbin\/agetty --noclear %I $TERM/ExecStart=-\/sbin\/agetty --autologin root --noclear %I/g' /etc/systemd/system/getty@tty1.service
+echo ";Alias=getty@tty1.service" >> /etc/systemd/system/getty@tty1.service
+ln -s /etc/systemd/system/getty@tty1.service /etc/systemd/system/getty.target.wants/getty@tty1.service
+echo "Hack for autologing into root console activated."
+echo ""
+sync
+EOF
+cat <<EOF >> install5autostartxroot.sh
+cp /root/.bash_profile /root/.bash_profile.old
+echo "[[ -z \$DISPLAY && \$XDG_VTNR -eq 1 ]] && exec startx" > /root/.bash_profile
+echo ""
+echo "Inserted startx in .bash_profile, original file copied to .bash_profile.old"
+echo ""
+echo "Use CTRL + ALT + F2 or more to get to a console."
+echo ""
+echo "Don't run this script again on this install or you lose .bash_profile.old"
+echo ""
 sync
 EOF
 cd ../../
