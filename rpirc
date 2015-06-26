@@ -1,0 +1,94 @@
+##### Script pentru Raspbian de instalare programe dupa actualizare totala si reboot:
+### Compilare pachete pentru redare .mp3 (fara  --with-cpu=generic_fpu nu merge deloc) si arhive .rar (din sursa nonlibera):
+apt-get install -y devscripts debhelper
+apt-get build-dep -y mpg123
+apt-get build-dep -y unrar-nonfree
+mkdir srcbuild
+cd srcbuild
+apt-get source mpg123
+apt-get source unrar-nonfree
+cd mpg123*
+# Editare debian/rules si adaugare --with-cpu=generic_fpu la randul de sub override_dh_auto_configure:
+sed -i 's/dh_auto_configure -- $(CONF_COMMON) $(CONF_$(CPU))/dh_auto_configure -- $(CONF_COMMON) $(CONF_$(CPU)) --with-cpu=generic_fpu/g' debian/rules
+# Fakeroot da eroare asa ca se intra direct ca root, oricum suntem deja root cand rulam scriptul:
+debuild -us -uc
+cd ..
+cd unrar-nonfree*
+debuild -us -uc
+sync
+cd ..
+mkdir ../compilate
+# Stergere eventuale pachete vechi:
+rm ../compilate/*.deb
+mv *.deb ../compilate
+cd ..
+rm -rf srcbuild
+sync
+### Instalarea pachetelor compilate:
+#Daca instalez mpg123 cu apt-get imi suprascrie si libmpg123 deci instalez de la compilate cu dpkg:
+cd compilate
+dpkg -i libmpg123*.deb
+dpkg -i mpg123*.deb
+dpkg -i unrar*.deb
+cd ..
+rm -rf compilate
+### Dezactivare screen saver, blank screen:
+cp xorg.conf /etc/X11
+### Adaugare pi la grupul disk ca sa nu mai dea erori read-only la stick-uri si carduri:
+usermod -G disk --append pi
+apt-get remove -y xpdf epiphany-browser
+sync
+# chromium din Wheezy nu suporta html5 - se bazeaza pe flash care nu merge pe rpi deci nu se pune pana la Raspbian Jessie
+apt-get install -y libreoffice p7zip-full pidgin  zip kpartx ncdu youtube-dl cmake build-essential dpkg-dev fonts-freefont-ttf libssh-4 apt-file psmisc bsdtar gddrescue inkscape gimp xsane libsane-extras evince mc espeak transmission audacious audacious-plugins dosfstools synaptic docx2txt iceweasel xine-ui lynx mplayer libdvdread4
+### Nu se pune pulseaudio pana nu se trece la Raspbian Jessie ca nu merge bine deloc in Wheezy
+sync
+### Instalare Youtube Downloader in home si pregatire director zoutube la care sa se faca ln -s :
+mkdir /home/pi/youtube
+chown pi /home/pi/youtube
+cp youtube-dl /home/pi/youtube
+chmod +x /home/pi/youtube/youtube-dl
+chown pi /home/pi/youtube/youtube-dl
+mkdir /home/pi/zoutube
+### Eliberare spatiu (a doua e mai periculoasa):
+apt-get clean
+### Corectare posibile erori de instalare daca nu s-a putut lua ceva:
+apt-get install -y
+### Dezinstalare programe care nu mai sunt apelate de nimic:
+apt-get autoremove -y
+sync
+### Instalare Kodi
+echo "deb http://archive.mene.za.net/raspbian wheezy contrib" > /etc/apt/sources.list.d/mene.list
+apt-key adv --keyserver keyserver.ubuntu.com --recv-key 5243CDED
+#addgroup --system input
+apt-get update
+apt-get install -y kodi
+#echo "SUBSYSTEM==input, GROUP=input, MODE=0660" >> /etc/udev/rules.d/99-input.rules
+echo "KERNEL==tty[0-9]*, GROUP=tty, MODE=0660" >> /etc/udev/rules.d/99-input.rules
+echo '# input' >> /etc/udev/rules.d/10-permissions.rules
+echo 'KERNEL=="mouse*|mice|event*",   MODE="0660", GROUP="input"' >> /etc/udev/rules.d/10-permissions.rules
+echo 'KERNEL=="ts[0-9]*|uinput",     MODE="0660", GROUP="input"' >> /etc/udev/rules.d/10-permissions.rules
+echo 'KERNEL==js[0-9]*,             MODE=0660, GROUP=input' >> /etc/udev/rules.d/10-permissions.rules
+echo '# tty' >> /etc/udev/rules.d/10-permissions.rules
+echo 'KERNEL==tty[0-9]*,            MODE=0666' >> /etc/udev/rules.d/10-permissions.rules
+echo '# vchiq' >> /etc/udev/rules.d/10-permissions.rules
+echo 'SUBSYSTEM==vchiq,  GROUP=video, MODE=0660' >> /etc/udev/rules.d/10-permissions.rules
+usermod -a -G audio pi
+usermod -a -G video pi
+usermod -a -G input pi
+usermod -a -G dialout pi
+usermod -a -G plugdev pi
+usermod -a -G tty pi
+sync
+# Uneori la iesire Kodi lasa un ecran negru din care nu se mai poate iesi dar se repara cu:
+echo '#!/bin/bash' > /usr/bin/kodiexitfix
+echo '' >>  /usr/bin/kodiexitfix
+echo 'if [[ $(tail -1 /home/pi/.kodi/temp/kodi.log | grep "application stopped...") ]]' >> /usr/bin/kodiexitfix
+echo 'then' >> /usr/bin/kodiexitfix
+echo '        killall kodi.bin' >> /usr/bin/kodiexitfix
+echo '        mv /home/pi/.kodi/temp/kodi.log /home/pi/.kodi/temp/kodi.old.log' >> /usr/bin/kodiexitfix
+echo '        chvt 2 && sleep 2 && chvt 7' >> /usr/bin/kodiexitfix
+echo 'fi' >> /usr/bin/kodiexitfix
+echo '*/1 * * * * root bash /usr/bin/kodiexitfix' >> /etc/crontab
+sync
+pause 5
+reboot
