@@ -1,15 +1,71 @@
 ##### Script pentru Raspbian de instalare programe inainte de a avea internet:
-### Swap poate provoaca blocare cand este folosit, se foloseste script rpiswapoff pentru oprire
-sh rpiswapoff
-# Overclock provoaca instabilitate la procesor 100% cu scriere la viteza mare pe stick sau card.
+### Nu se mai pune nici un cache in memorie ca se ocupa repede memoria pe site-uri
+### Raspberry Pi tweaks to sysctl.conf
+
+#General rules for writing caches:
+# <<< 1 >>> Use medium caches of a few megabytes,not small, not huge because small caches make everything slower and
+#		huge caches take a higher amount of time to flush and during this time (tens of seconds) the cpu is at
+#		100% hanging everything. So an equilibrium must be reached between slowness and hangings. Slowness
+#		increses exponentially with caches under 512 KB and the duration of hangings increase exponentially with
+#		caches larger than 32 MB. 
+# <<< 2 >>> No ratios because equilibrium is reached at a fixed number of megabytes independent of the total memory.
+#		Instead of vm.dirty_ratio and vm.dirty_background_ratio use vm.dirty_bytes and vm.dirty_background_bytes.
+# <<< 3 >>> Try to achieve a speed of 32 MB / s, for an 8MB drive buffer with 32 MB/s write speed, so the equilibrium is
+#		at 8 MB meaning 8388608 bytes written at a maximum of 4 times a second meaning 25 centisecs.
+#
+#vm.swappiness = between 0 and 100, closer to 0 keeps caches small and puts applications to swap only if memory is full,
+#		some swappping is actually good because unused applications and caches are kept in swap freeing memory
+#		for example unused open tabs in a browser with large youtube videos in each one. Good equilibrium at 2.
+#vm.min_free_kbytes = memory to be kept free in megabytes, not used by processes, important kernel caches are used in the
+#		free part of the memory and are not reported that they are using memory. Good equilibrium at 8192.
+#vm.vfs_cache_pressure = between 0 and 100, closer to 100 prefers to keep most of the directory and file structure
+#		informations called inodes in cache, not good for very large partitions and number of files, closer to 0
+#		inodes are not cached leading to a lot of unnecesary repetitive querrying of of drives to load inodes
+#		sometimes for the exact same file. Good equilibrium at 50.
+#vm.dirty_bytes = maximum number of bytes after which a process will write immediately what it wants to the writing cache.
+#		Good equilibrium at 8388608, in sync with vm.dirty_background_bytes.
+#vm.dirty_background_bytes = size of the writing cache in bytes. When reached writing starts immediately, not waiting for
+#		old data from vm.dirty_writeback_centisecs. Good equilibrium at 8388608, in sync with vm.dirty_bytes.
+#vm.dirty_writeback_centisecs = time in hundreds of a second between old data cache flushes. Good equilibrium at 600,
+#		in sync with vm.dirty_expire_centisecs
+#vm.dirty_expire_centisecs = time in hundreds of a second that old data can stay in the writing cache. Too long and there
+#		is a higher risk of data loss because of an unproper shutdown (reseting a computer if you can't exit a
+#		fullscreen game, for example). Not needed shorter than vm.dirty_writeback_centisecs, they are written then.
+#		Good equilibrium at 600, in sync with vm.dirty_writeback_centisecs.
+
+echo "" >> /etc/sysctl.conf
+echo "# http://www.raspberrypi.org/forums/viewtopic.php?p=104096#p104096" >> /etc/sysctl.conf
+echo "# rpi tweaks" >> /etc/sysctl.conf
+echo "vm.swappiness = 2" >> /etc/sysctl.conf
+echo "vm.min_free_kbytes = 8192" >> /etc/sysctl.conf
+echo "vm.vfs_cache_pressure = 50" >> /etc/sysctl.conf
+echo "vm.dirty_bytes = 8388608" >> /etc/sysctl.conf
+echo "vm.dirty_background_bytes = 8388608" >> /etc/sysctl.conf
+echo "vm.dirty_writeback_centisecs = 600" >> /etc/sysctl.conf
+echo "vm.dirty_expire_centisecs = 600" >> /etc/sysctl.conf
+echo "" >> /etc/sysctl.conf
+echo "# In other words the seven optimizations do this, in their order, each in paranthesis:" >> /etc/sysctl.conf
+echo "#		(keep caches medium and swap low), (keep a free memory of 8 MB), (keep a" >> /etc/sysctl.conf
+echo "#		medium amount of file information in cache), (processes write after reaching" >> /etc/sysctl.conf
+echo "#		8MB in their memory) to a (cache of 8 MB in size), in which (old data is" >> /etc/sysctl.conf
+echo "#		written every 6 seconds) and (data is considered old after 6 seconds)" >> /etc/sysctl.conf
+### Swap nu se mai opreste deoarece scrie maxim 100 MB in cazuri rare, in maxim 20 secunde, eliberand memorie,
+### chiar il maresc la 400 MB sa tina bine taburi nefolosite din browser
+echo "CONF_SWAPSIZE=400" > sdcard/etc/dphys-swapfile
 ### Alias-uri la comenzi multimedia din doua litere:
-# Redare xvid si h264 sau cu licenta de cate 5$ mpeg1+mpeg2 si vc-1:
+# Redare xvid si h264 hardware gpu la rezolutii foarte mari
+#	sau cu start_x=1 in config.txt VP6, VP8 si Theora  software gpu (cu rezolutii mai mici)
+#	sau cu licenta de cate 5$ mpeg1+mpeg2 si vc-1 hardware gpu cu licenta text in /boot
 echo "alias oi='omxplayer'" >> /home/pi/.bashrc
-# Download video de pe youtube la calitate maxima in home:
-echo "alias yt='cd /home/pi/youtube && ./youtube-dl --max-quality mp4'" >> /home/pi/.bashrc
+# Download video de pe youtube sau vimeo la calitate maxima in home, youtube-dl alege maxim si codec corect acum
+#	dar pentru a avea cele mai noi versiuni nu se instaleaza cu apt-get ci sw pune in director ~/youtube
+#	update cu yt -U :
+echo "alias yt='cd /home/pi/youtube && ./youtube-dl'" >> /home/pi/.bashrc
 # Download video de pe youtube la calitate maxima in alt director indicat cu "ln -s director zoutube":
-echo "alias zt='cd /home/pi/zoutube && ./youtube-dl --max-quality mp4'" >> /home/pi/.bashrc
-# Luare de lista youtube in format text cu linii numerotate:
+echo "alias zt='cd /home/pi/zoutube && ./youtube-dl'" >> /home/pi/.bashrc
+# Cand lui youtube-dl i se da un video cu indicare playlist ia automat tot playlistul
+#	deci nu mai trebuie lista youtube in format text cu linii numerotate
+#	totusi se pastreaza pentru alte site-uri cu link-uri:
 echo "alias ly='lynx --dump -listonly'" >> /home/pi/.bashrc
 # "adresa" > fisier
 # Copiere de dvd intr-un fisier .mpg pentru redare mai eficienta de pe stick sau card:
@@ -19,22 +75,7 @@ echo "alias my='mplayer dvd://1 -dumpstream -dumpfile'" >> /home/pi/.bashrc
 # Prin scriere de catre root .bashrc apartine root si se face sa apartina din nou userului pi:
 chown pi /home/pi/.bashrc
 ### Comanda sync de scriere totala a datelor:
-# Trebuie scris tot pe card sau stick ca sa fie procesor liber in timpul rularii altei comenzi,
-# altfel procesor scrie greu daca este solicitat 100% si se poate umple buffer respectiv bloca.
 sync
-### Aceste pachete au optiuni speciale sau nu se gasesc in repository binar (compilate mar2015):
-#Instalare mpg123 care include libmpg123 cu optiune  --with-cpu=generic_fpu
-#!!!!!!!!!!Daca instalez mpg123 din repository imi suprascrie si libmpg123 deci instalez de aici:
-dpkg -i libmpg123*.deb
-dpkg -i mpg123*.deb
-### Pentru dezarhivare fisiere rar se instaleaza Unrar compilat din sursa nonlibera:
-dpkg -i unrar*.deb
-### Dezactivare screen saver, blank screen:
-cp xorg.conf /etc/X11
-### Adaugare pi la grupul disk ca sa nu mai dea erori read-only la stick-uri si carduri:
-#Este deja grupul disks in wheezy dar mai tarziu.
-#groupadd disk
-usermod -G disk --append pi
 ### Instalare PPPOEconf care configureaza accesul la internet cu user si parola:
 cp pppoe/* /var/cache/apt/archives
 sync
