@@ -421,10 +421,13 @@ sync
 sleep 3
 amixer cset numid=3 -- 90%
 sed -i 's/chromium %U/chromium --user-data-dir \/var\/cache\/chromiumdir %U/g' ../usr/share/applications/chromium.desktop
+ln -s /usr/bin/omxplayer /usr/bin/oi
+ln -s /usr/bin/youtube-dl /usr/bin/yt
 mkdir ../var/cache/chromiumdir
 chown 777 ../var/cache/chromiumdir
 sync
 EOF
+echo '#!/bin/bash' > install4autologinroot.sh
 cat <<EOF >> install4autologinroot.sh
 systemctl stop sshd.service
 systemctl disable sshd.service
@@ -446,15 +449,38 @@ echo "Hack for autologing into root console activated."
 echo ""
 sync
 EOF
+echo '#!/bin/bash' > install5autostartxroot.sh
 cat <<EOF >> install5autostartxroot.sh
 cp /root/.bash_profile /root/.bash_profile.old
-echo "[[ -z \$DISPLAY && \$XDG_VTNR -eq 1 ]] && exec startx" > /root/.bash_profile
+echo "[[ -f ~/.bashrc ]] && . ~/.bashrc" > /root/.bash_profile
+echo "[[ -z \$DISPLAY && \$XDG_VTNR -eq 1 ]] && exec startx" >> /root/.bash_profile
 echo ""
 echo "Inserted startx in .bash_profile, original file copied to .bash_profile.old"
 echo ""
 echo "Use CTRL + ALT + F2 or more to get to a console."
 echo ""
 echo "Don't run this script again on this install or you lose .bash_profile.old"
+echo ""
+sync
+EOF
+echo '#!/bin/bash' > install6localesro-edit.sh
+cat <<EOF >> install6localesro-edit.sh
+sed -i 's/#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/g' /etc/locale.gen
+sed -i 's/#ro_RO.UTF-8 UTF-8/ro_RO.UTF-8 UTF-8/g' /etc/locale.gen
+sleep 1
+locale-gen
+sleep 1
+localectl set-locale LANG=ro_RO.UTF8
+sleep 1
+localectl --no-convert set keymap ro
+sleep 1
+localectl --no-convert set-x11-keymap ro pc105 dvorak grp:alt_shift_toggle
+sleep 1
+echo "KEYMAP=ro" > /etc/vconsole.conf
+sleep 1
+echo "If you don't like the locale ro, change in script"
+echo ""
+echo "View the locale and keymap with list-locales, list-keymaps"
 echo ""
 sync
 EOF
