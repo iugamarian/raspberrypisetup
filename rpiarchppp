@@ -1,7 +1,7 @@
 #!/bin/bash
 # Advanced script to install and configure Arch with ppp on indicated sdcardforarch
 # More info and newest @ http://www.github.com/iugamarian/raspberrypisetup
-# Version 1.25 tested and it works
+# Version 1.26 tested and it works
 # Forked from ShorTie	<idiot@dot.com> 
 # Brought to you by iugamarian	<iugamarian@yahoo.com> 
 # Configuration - choose here carefuly 
@@ -399,14 +399,17 @@ sleep 2
 sync
 sleep 2
 echo "exec startlxde" > .xinitrc
+cp /usr/lib/mc/ext.d/video.sh /usr/lib/mc/ext.d/video.sh.old
+echo '#!/bin/sh' > /usr/lib/mc/ext.d/video.sh
+echo "omxplayer \"\${MC_EXT_FILENAME}\"" >> /usr/lib/mc/ext.d/video.sh
 pkgfile --update
 sleep 2
-sed -i 's/load-module module-suspend-on-idle/#load-module module-suspend-on-idle/g' ../etc/pulse/default.pa
-sed -i 's/load-module module-suspend-on-idle/#load-module module-suspend-on-idle/g' ../etc/pulse/system.pa
-echo "flat-volumes = no" >> ../etc/pulse/daemon.conf
-echo "high-priority = no" >> ../etc/pulse/daemon.conf
-echo "nice-level = -1" >> ../etc/pulse/daemon.conf
-echo "no-cpu-limit = yes" >> ../etc/pulse/daemon.conf
+sed -i 's/load-module module-suspend-on-idle/#load-module module-suspend-on-idle/g' /etc/pulse/default.pa
+sed -i 's/load-module module-suspend-on-idle/#load-module module-suspend-on-idle/g' /etc/pulse/system.pa
+echo "flat-volumes = no" >> /etc/pulse/daemon.conf
+echo "high-priority = no" >> /etc/pulse/daemon.conf
+echo "nice-level = -1" >> /etc/pulse/daemon.conf
+echo "no-cpu-limit = yes" >> /etc/pulse/daemon.conf
 sleep 3
 systemctl daemon-reload
 sleep 5
@@ -420,15 +423,16 @@ sleep 5
 sync
 sleep 3
 amixer cset numid=3 -- 90%
-sed -i 's/chromium %U/chromium --user-data-dir \/var\/cache\/chromiumdir %U/g' ../usr/share/applications/chromium.desktop
+sed -i 's/chromium %U/chromium --user-data-dir \/var\/cache\/chromiumdir %U/g' /usr/share/applications/chromium.desktop
 ln -s /usr/bin/omxplayer /usr/bin/oi
 ln -s /usr/bin/youtube-dl /usr/bin/yt
-mkdir ../var/cache/chromiumdir
-chown 777 ../var/cache/chromiumdir
+mkdir /var/cache/chromiumdir
+chown 777 /var/cache/chromiumdir
 sleep 1
 echo ""
 echo "Added symbolic links oi and yt to omxplayer and youtube-dl."
 echo ""
+echo "Added mc option to open all videos with omxplayer."
 sync
 EOF
 echo '#!/bin/bash' > install4autologinroot.sh
@@ -600,7 +604,6 @@ vm.dirty_expire_centisecs = 600
 #		8MB in their memory) to a (cache of 8 MB in size), in which (old data is
 #		written every 6 seconds) and (data is considered old after 6 seconds).
 EOF
-#cat sdcardforarch/etc/sysctl.d/30-rpi-optimizations.conf
 echo ""
 echo ""
 echo "Creating config.txt"; echo ""
