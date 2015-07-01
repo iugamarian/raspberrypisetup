@@ -1,7 +1,7 @@
 #!/bin/bash
 # Advanced script to install and configure Arch with ppp on indicated sdcardforarch
 # More info and newest @ http://www.github.com/iugamarian/raspberrypisetup
-# Version 1.26 tested and it works
+# Version 1.27 tested and it works
 # Forked from ShorTie	<idiot@dot.com> 
 # Brought to you by iugamarian	<iugamarian@yahoo.com> 
 # Configuration - choose here carefuly 
@@ -146,6 +146,8 @@ else
 echo "Missing needed programs, install them:"
 echo ""
 echo $neededprograms
+echo ""
+echo "On Arch fdisk is in util-linux which is in base-devel."
 echo ""
 echo "Exiting."
 echo ""
@@ -321,15 +323,24 @@ echo "Generating install scripts install* to run after login:"
 echo '#!/bin/bash' > install1ppp.sh
 cat <<EOF >> install1ppp.sh
 echo ""
-pacman -U $namelibnl-$rpiversion.pkg.tar.xz
-pacman -U $namelibpcap-$rpiversion.pkg.tar.xz
-pacman -U $nameppp-$rpiversion.pkg.tar.xz
+echo "Installing ppp..."
+echo ""
+sync
+sleep 2
+pacman -U --noconfirm $namelibnl-$rpiversion.pkg.tar.xz
+pacman -U --noconfirm $namelibpcap-$rpiversion.pkg.tar.xz
+pacman -U --noconfirm $nameppp-$rpiversion.pkg.tar.xz
 sleep 1
 ln -s /etc/ppp/peers/$pppprovider /etc/ppp/peers/provider
 sleep 1
 cp /etc/ppp/pap-secrets.pacorig /etc/ppp/pap-secrets
 cp /etc/ppp/chap-secrets.pacorig /etc/ppp/chap-secrets
+sleep 1
 sync
+sleep 2
+echo "Stopping systemd messages that need to run systemctl daemon reload:"
+echo ""
+# All of this is needed, including sleeps, to make systemd stop giving this messages
 sleep 1
 systemctl daemon-reload
 sleep 5
@@ -359,46 +370,62 @@ systemctl daemon-reload
 sleep 5
 sync
 sleep 5
+echo ""
+echo "Completed installing ppp."
+echo ""
+echo "Internet is available if configuration is correct."
+echo ""
 EOF
 # ... for #!/bin/bash if I put "" gives me an error because of the !
-echo '#!/bin/bash' > install2update.sh
-cat <<EOF >> install2update.sh
+echo '#!/bin/bash' > install2upgrade.sh
+cat <<EOF >> install2upgrade.sh
 echo ""
+echo "Upgrading system..."
+echo ""
+sync
+sleep 5
+pacman -Syu --noconfirm
 sleep 2
-systemctl daemon-reload
-sleep 5
+echo ""
+echo "Completed upgrading system."
+echo ""
+echo "Rebooting so that all upgrades run in the memory too."
+echo ""
 sync
-sleep 5
-systemctl stop ppp@$pppprovider.service
-systemctl disable ppp@$pppprovider.service
-sleep 5
-systemctl daemon-reload
-sleep 5
+sleep 3
 sync
-sleep 5
-systemctl enable ppp@$pppprovider.service
-systemctl start ppp@$pppprovider.service
-sleep 5
-sync
-sleep 5
-systemctl daemon-reload
-sleep 5
-sync
-sleep 5
-pacman -Syu
-sleep 5
-sync
+sleep 3
+reboot
 EOF
 # ... for #!/bin/bash if I put "" gives me an error because of the !
 echo '#!/bin/bash' > install3lxde.sh
 cat <<EOF >> install3lxde.sh
 echo ""
-pacman -Syu
-pacman -S chromium mesa-libgl phonon-qt4-vlc xf86-video-fbturbo-git arch-install-scripts dosfstools unarj p7zip gzip bzip2 xarchiver pkgfile parted mkinitcpio upower ttf-freefont ttf-dejavu xorg-server xorg-xinit leafpad chromium youtube-dl kodi-rbp omxplayer transmission-gtk audacious mc openra libnewt newt-syrup gimp libreoffice-still jre8-openjdk jdk8-openjdk xsane openssh openssl libksane xsane-gimp inkscape timidity++ timidity-freepats gparted imagemagick libbcm2835 wiringpi espeak mpg123 flac lame kactivities4 alsa-utils alsa-plugins pulseaudio pulseaudio-alsa paprefs pavucontrol gpicview lxappearance lxappearance-obconf lxde-common lxde-icon-theme lxdm lxinput lxlauncher lxmenu-data lxmusic lxpanel lxrandr lxsession lxtask lxterminal openbox pcmanfm git wget libx264
+echo "Installing lxde..."
+echo ""
+sleep 2
+# Making sure package lists are up to date right now
+pacman -Syu --noconfirm
+sleep 2
+# Console packages - fdisk is in util-linux which is in base-devel
+pacman -S --noconfirm --needed base base-devel arch-install-scripts dosfstools pkgfile gptfdisk parted mkinitcpio upower mc libnewt newt-syrup openssh openssl wiringpi espeak mpg123 flac lame packer youtube-dl imagemagick git wget libx264
+sleep 2
+# Sound packages
+pacman -S --noconfirm --needed alsa-utils alsa-plugins pulseaudio pulseaudio-alsa paprefs pavucontrol timidity++ timidity-freepats libbcm2835
+sleep 2
+# Xorg packages
+pacman -S --noconfirm --needed unrar unzip unarj p7zip gzip bzip2 xarchiver xf86-video-fbturbo-git mesa-libgl ttf-freefont ttf-dejavu xorg-server xorg-xinit kodi-rbp libksane xsane-gimp inkscape phonon-qt4-vlc gparted audacious gimp libreoffice-still jre8-openjdk jdk8-openjdk xsane kactivities4
+sleep 2
+# Lxde packages
+pacman -S --noconfirm --needed chromium gpicview lxappearance lxappearance-obconf lxde-common lxde-icon-theme lxdm lxinput lxlauncher lxmenu-data lxmusic lxpanel lxrandr lxsession lxtask lxterminal openbox pcmanfm omxplayer transmission-gtk  leafpad 
+sleep 2
+# Game packages
+pacman -S --noconfirm --needed openra
 sleep 2
 sync
 sleep 2
 echo "exec startlxde" > .xinitrc
+# Hack to allow mc to open videos with omxplayer
 cp /usr/lib/mc/ext.d/video.sh /usr/lib/mc/ext.d/video.sh.old
 echo '#!/bin/sh' > /usr/lib/mc/ext.d/video.sh
 echo "omxplayer \"\${MC_EXT_FILENAME}\"" >> /usr/lib/mc/ext.d/video.sh
@@ -433,10 +460,37 @@ echo ""
 echo "Added symbolic links oi and yt to omxplayer and youtube-dl."
 echo ""
 echo "Added mc option to open all videos with omxplayer."
+echo ""
+sleep 2
 sync
 EOF
 echo '#!/bin/bash' > install4autologinroot.sh
 cat <<EOF >> install4autologinroot.sh
+echo ""
+echo "Activating autologin root... not recomended but maybe cool..."
+echo ""
+echo "If you want to keep ssh and have a user, stop this script with (ctrl + c)"
+echo ""
+sleep 3
+echo "5"
+echo ""
+sleep 2
+echo "4"
+echo ""
+sleep 2
+echo "3"
+echo ""
+sleep 2
+echo "2"
+echo ""
+sleep 2
+echo "1"
+echo ""
+sleep 5
+echo "Too late..."
+echo ""
+sync
+sleep 1
 systemctl stop sshd.service
 systemctl disable sshd.service
 echo ""
@@ -455,15 +509,35 @@ echo ";Alias=getty@tty1.service" >> /etc/systemd/system/getty@tty1.service
 ln -s /etc/systemd/system/getty@tty1.service /etc/systemd/system/getty.target.wants/getty@tty1.service
 sleep 1
 echo ""
-echo "Hack for autologing into root console activated."
+echo "Hack for autologing into root console and disabling ssh activated."
 echo ""
+echo "If you want to build packages, it's hard to be root, you need to:"
+echo ""
+echo "1) Edit /usr/bin/makepkg"
+echo "\t a) Add \'asroot\' in OPT_LONG=()"
+echo "\t b) Comment and add a sleep 1 inside if (( EUID == 0 ))"
+echo ""
+echo "2) Use packer to install packages from aur"
+echo ""
+echo "To change editor to nano:"
+echo "export EDITOR=\"nano\""
+echo "To avoid tmpfs for /tmp used by packer (large git repositories):"
+echo "systemctl mask tmp.mount"
+echo "And reboot. To reactivate, ... unmask ... and reboot."
+echo ""
+sleep 2
 sync
 EOF
 echo '#!/bin/bash' > install5autostartxroot.sh
 cat <<EOF >> install5autostartxroot.sh
+echo ""
+echo "Activating auto startx at root login..."
+echo ""
 cp /root/.bash_profile /root/.bash_profile.old
 echo "[[ -f ~/.bashrc ]] && . ~/.bashrc" > /root/.bash_profile
 echo "[[ -z \$DISPLAY && \$XDG_VTNR -eq 1 ]] && exec startx" >> /root/.bash_profile
+echo "export EDITOR=\"nano\"" >> /root/.bashrc
+. ~/.bashrc
 sleep 1
 echo ""
 echo "Inserted startx in .bash_profile, original file copied to .bash_profile.old"
@@ -472,10 +546,16 @@ echo "Use CTRL + ALT + F2 or more to get to a console."
 echo ""
 echo "Don't run this script again on this install or you lose .bash_profile.old"
 echo ""
+sleep 2
 sync
 EOF
 echo '#!/bin/bash' > install6localesro-edit.sh
 cat <<EOF >> install6localesro-edit.sh
+echo ""
+echo "Activating locales for Romania..."
+echo ""
+echo "You can edit this script to activate another..."
+echo ""
 sed -i 's/#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/g' /etc/locale.gen
 sed -i 's/#ro_RO.UTF-8 UTF-8/ro_RO.UTF-8 UTF-8/g' /etc/locale.gen
 sleep 1
