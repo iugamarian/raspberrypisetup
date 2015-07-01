@@ -1,7 +1,7 @@
 #!/bin/bash
 # Advanced script to install and configure Arch with ppp on indicated sdcardforarch
 # More info and newest @ http://www.github.com/iugamarian/raspberrypisetup
-# Version 1.28 tested and it works
+# Version 1.29 tested and it works
 # Forked from ShorTie	<idiot@dot.com> 
 # Brought to you by iugamarian	<iugamarian@yahoo.com> 
 # Configuration - choose here carefuly 
@@ -521,9 +521,9 @@ echo "2) Use packer to install packages from aur"
 echo ""
 echo "To change editor to nano:"
 echo "export EDITOR=\"nano\""
-echo "To avoid tmpfs for /tmp used by packer (large git repositories):"
-echo "systemctl mask tmp.mount"
-echo "And reboot. To reactivate, ... unmask ... and reboot."
+echo "To avoid tmpfs for /tmp used by packer (large git repositories)"
+echo 'alias pk="TMPDIR=/root/tmp/pkgs/ EDITOR=nano packer"'
+echo "Use the pk alias."
 echo ""
 sleep 2
 sync
@@ -536,7 +536,7 @@ echo ""
 cp /root/.bash_profile /root/.bash_profile.old
 echo "[[ -f ~/.bashrc ]] && . ~/.bashrc" > /root/.bash_profile
 echo "[[ -z \$DISPLAY && \$XDG_VTNR -eq 1 ]] && exec startx" >> /root/.bash_profile
-echo "export EDITOR=\"nano\"" >> /root/.bashrc
+echo 'alias pk="TMPDIR=/root/tmp/pkgs/ EDITOR=nano packer"' >> /root/.bashrc
 . ~/.bashrc
 sleep 1
 echo ""
