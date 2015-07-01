@@ -1,7 +1,7 @@
 #!/bin/bash
 # Advanced script to install and configure Arch with ppp on indicated sdcardforarch
 # More info and newest @ http://www.github.com/iugamarian/raspberrypisetup
-# Version 1.29 tested and it works
+# Version 1.30 tested and it works
 # Forked from ShorTie	<idiot@dot.com> 
 # Brought to you by iugamarian	<iugamarian@yahoo.com> 
 # Configuration - choose here carefuly 
@@ -408,23 +408,36 @@ sleep 2
 pacman -Syu --noconfirm
 sleep 2
 # Console packages - fdisk is in util-linux which is in base-devel
-pacman -S --noconfirm --needed base base-devel arch-install-scripts dosfstools pkgfile gptfdisk parted mkinitcpio upower mc libnewt newt-syrup openssh openssl wiringpi espeak mpg123 flac lame packer youtube-dl imagemagick git wget libx264
+pacman -S --noconfirm --needed base base-devel arch-install-scripts dosfstools pkgfile gptfdisk parted mkinitcpio upower mc libnewt newt-syrup openssh openssl wiringpi espeak mpg123 flac lame packer youtube-dl imagemagick git wget libx264 mediainfo
 sleep 2
 # Sound packages
 pacman -S --noconfirm --needed alsa-utils alsa-plugins pulseaudio pulseaudio-alsa paprefs pavucontrol timidity++ timidity-freepats libbcm2835
 sleep 2
 # Xorg packages
-pacman -S --noconfirm --needed unrar unzip unarj p7zip gzip bzip2 xarchiver xf86-video-fbturbo-git mesa-libgl ttf-freefont ttf-dejavu xorg-server xorg-xinit kodi-rbp libksane xsane-gimp inkscape phonon-qt4-vlc gparted audacious gimp libreoffice-still jre8-openjdk jdk8-openjdk xsane kactivities4
+pacman -S --noconfirm --needed unrar unzip unarj p7zip gzip bzip2 xarchiver xf86-video-fbturbo-git mesa-libgl ttf-freefont ttf-dejavu xorg-server xorg-xinit kodi-rbp libksane xsane-gimp inkscape phonon-qt4-gstreamer phonon-qt5-gstreamer gparted audacious gimp libreoffice-still jre8-openjdk jdk8-openjdk xsane kactivities4
 sleep 2
 # Lxde packages
-pacman -S --noconfirm --needed chromium gpicview lxappearance lxappearance-obconf lxde-common lxde-icon-theme lxdm lxinput lxlauncher lxmenu-data lxmusic lxpanel lxrandr lxsession lxtask lxterminal openbox pcmanfm omxplayer transmission-gtk  leafpad 
+pacman -S --noconfirm --needed chromium calligra-krita gpicview lxappearance lxappearance-obconf lxde-common lxde-icon-theme lxdm lxinput lxlauncher lxmenu-data lxmusic lxpanel lxrandr lxsession lxtask lxterminal openbox pcmanfm omxplayer transmission-gtk leafpad mediainfo-gui
 sleep 2
 # Game packages
-pacman -S --noconfirm --needed openra
+pacman -S --noconfirm --needed openra kobodeluxe klines
 sleep 2
 sync
 sleep 2
 echo "exec startlxde" > .xinitrc
+# Kodi leaves a blank screen when exiting, this hack fixes that
+echo '#!/bin/bash' > /usr/bin/kodiexitfixroot
+echo '' >>  /usr/bin/kodiexitfixroot
+echo 'if [[ $(tail -1 /home/root/.kodi/temp/kodi.log | grep "application stopped...") ]]' >> /usr/bin/kodiexitfixroot
+echo 'then' >> /usr/bin/kodiexitfixroot
+echo '        killall kodi.bin' >> /usr/bin/kodiexitfixroot
+echo '        mv /home/root/.kodi/temp/kodi.log /home/root/.kodi/temp/kodi.old.log' >> /usr/bin/kodiexitfixroot
+echo '        chvt 2 && sleep 2 && chvt 1' >> /usr/bin/kodiexitfixroot
+echo 'fi' >> /usr/bin/kodiexitfixroot
+echo '*/1 * * * * root bash /usr/bin/kodiexitfixroot' >> /etc/crontab
+sleep 2
+sync
+sleep 2
 # Hack to allow mc to open videos with omxplayer
 cp /usr/lib/mc/ext.d/video.sh /usr/lib/mc/ext.d/video.sh.old
 echo '#!/bin/sh' > /usr/lib/mc/ext.d/video.sh
@@ -452,7 +465,6 @@ sleep 3
 amixer cset numid=3 -- 90%
 sed -i 's/chromium %U/chromium --user-data-dir \/var\/cache\/chromiumdir %U/g' /usr/share/applications/chromium.desktop
 ln -s /usr/bin/omxplayer /usr/bin/oi
-ln -s /usr/bin/youtube-dl /usr/bin/yt
 mkdir /var/cache/chromiumdir
 chown 777 /var/cache/chromiumdir
 sleep 1
@@ -537,6 +549,7 @@ cp /root/.bash_profile /root/.bash_profile.old
 echo "[[ -f ~/.bashrc ]] && . ~/.bashrc" > /root/.bash_profile
 echo "[[ -z \$DISPLAY && \$XDG_VTNR -eq 1 ]] && exec startx" >> /root/.bash_profile
 echo 'alias pk="TMPDIR=/root/tmp/pkgs/ EDITOR=nano packer"' >> /root/.bashrc
+echo 'alias yt="youtube-dl -f mp4/best"' >> /root/.bashrc
 . ~/.bashrc
 sleep 1
 echo ""
