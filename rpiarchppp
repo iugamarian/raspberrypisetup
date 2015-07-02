@@ -451,12 +451,14 @@ sync
 sleep 2
 echo "exec startlxde" > .xinitrc
 # Kodi leaves a blank screen when exiting, this hack fixes that
+mkdir /usr/bin
+mkdir /root/.kodi/temp/
 echo '#!/bin/bash' > /usr/bin/kodiexitfixroot
 echo '' >>  /usr/bin/kodiexitfixroot
-echo 'if [[ $(tail -1 /home/root/.kodi/temp/kodi.log | grep "application stopped...") ]]' >> /usr/bin/kodiexitfixroot
+echo "if [[ \$(tail -1 /root/.kodi/temp/kodi.log | grep \"application stopped...\") ]]" >> /usr/bin/kodiexitfixroot
 echo 'then' >> /usr/bin/kodiexitfixroot
 echo '        killall kodi.bin' >> /usr/bin/kodiexitfixroot
-echo '        mv /home/root/.kodi/temp/kodi.log /home/root/.kodi/temp/kodi.old.log' >> /usr/bin/kodiexitfixroot
+echo '        mv /root/.kodi/temp/kodi.log /root/.kodi/temp/kodi.old.log' >> /usr/bin/kodiexitfixroot
 echo '        chvt 2 && sleep 2 && chvt 1' >> /usr/bin/kodiexitfixroot
 echo 'fi' >> /usr/bin/kodiexitfixroot
 echo '*/1 * * * * root bash /usr/bin/kodiexitfixroot' >> /etc/crontab
