@@ -449,7 +449,7 @@ pacman -S --noconfirm --needed openra kobodeluxe klines
 sleep 2
 sync
 sleep 2
-echo "exec startlxde" > .xinitrc
+echo "exec startlxde" > /root/.xinitrc
 # Kodi leaves a blank screen when exiting, this hack fixes that
 mkdir /usr/bin
 mkdir /root/.kodi/temp/
