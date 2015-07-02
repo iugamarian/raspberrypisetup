@@ -1,7 +1,7 @@
 #!/bin/bash
 # Advanced script to install and configure Arch with ppp on indicated sdcardforarch
 # More info and newest @ http://www.github.com/iugamarian/raspberrypisetup
-# Version 1.33 tested and it works
+# Version 1.34 tested and it works
 # Forked from ShorTie	<idiot@dot.com> 
 # Brought to you by iugamarian	<iugamarian@yahoo.com> 
 # Configuration - choose here carefuly 
@@ -490,7 +490,7 @@ sleep 5
 sync
 sleep 3
 amixer cset numid=3 -- 90%
-sed -i 's/chromium %U/chromium --user-data-dir \/var\/cache\/chromiumdir %U/g' /usr/share/applications/chromium.desktop
+sed -i 's/chromium %U/chromium --no-sandbox --user-data-dir \/var\/cache\/chromiumdir %U/g' /usr/share/applications/chromium.desktop
 ln -s /usr/bin/omxplayer /usr/bin/oi
 mkdir /var/cache/chromiumdir
 chown 777 /var/cache/chromiumdir
@@ -543,7 +543,7 @@ sync
 sleep 3
 rm /etc/systemd/system/getty.target.wants/getty@tty1.service
 cp /lib/systemd/system/getty@.service /etc/systemd/system/getty@tty1.service
-sed -i 's/ExecStart=-\/sbin\/agetty --noclear %I $TERM/ExecStart=-\/sbin\/agetty --autologin root --noclear %I/g' /etc/systemd/system/getty@tty1.service
+sed -i 's/--noclear/--autologin root --noclear/g' /etc/systemd/system/getty@tty1.service
 echo ";Alias=getty@tty1.service" >> /etc/systemd/system/getty@tty1.service
 ln -s /etc/systemd/system/getty@tty1.service /etc/systemd/system/getty.target.wants/getty@tty1.service
 sleep 1
