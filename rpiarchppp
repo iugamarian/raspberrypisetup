@@ -127,7 +127,7 @@ echo ""
 # If on Arch this commands install them
 pacman -Syu --noconfirm
 sleep 2
-pacman -S --noconfirm --needed base-devel dosfstools wget bsdtar
+pacman -S --noconfirm --needed base-devel dosfstools wget libarchive
 sleep 2
 sync
 # On other distributions the user installs them
@@ -161,7 +161,8 @@ echo $neededprograms
 echo ""
 echo "On Arch fdisk is in util-linux which is in base-devel."
 echo ""
-echo "On Arch mkfs.vfat is in dosfstools."
+echo "On Arch mkfs.vfat is in dosfstools and bsdtar is in libarchive."
+echo ""
 echo "Exiting."
 echo ""
 exit 1
@@ -461,7 +462,7 @@ sleep 2
 pacman -Syu --noconfirm
 sleep 2
 # Console packages - fdisk is in util-linux which is in base-devel
-pacman -S --noconfirm --needed base base-devel arch-install-scripts dosfstools mkinitcpio pkgfile gptfdisk parted mkinitcpio upower mc libnewt newt-syrup openssh openssl wiringpi espeak mpg123 flac lame packer youtube-dl imagemagick git wget libx264 mediainfo
+pacman -S --noconfirm --needed base base-devel arch-install-scripts dosfstools mkinitcpio libarchive pkgfile gptfdisk parted mkinitcpio upower mc libnewt newt-syrup openssh openssl wiringpi espeak mpg123 flac lame packer youtube-dl imagemagick git wget libx264 mediainfo
 sleep 2
 # Packages only for the Raspberry Pi (comment if installing on something else)
 pacman -S --noconfirm --needed libbcm2835 xf86-video-fbturbo-git kodi-rbp omxplayer
