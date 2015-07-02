@@ -605,7 +605,7 @@ localectl set-locale LANG=ro_RO.UTF8
 sleep 1
 localectl --no-convert set-keymap ro
 sleep 1
-localectl --no-convert set-x11-keymap ro pc105,dvorak grp:alt_shift_toggle
+localectl --no-convert set-x11-keymap ro pc105 ,dvorak grp:alt_shift_toggle
 sleep 1
 echo "KEYMAP=ro" > /etc/vconsole.conf
 sleep 1
