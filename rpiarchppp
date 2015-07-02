@@ -435,14 +435,16 @@ sleep 2
 # Console packages - fdisk is in util-linux which is in base-devel
 pacman -S --noconfirm --needed base base-devel arch-install-scripts dosfstools pkgfile gptfdisk parted mkinitcpio upower mc libnewt newt-syrup openssh openssl wiringpi espeak mpg123 flac lame packer youtube-dl imagemagick git wget libx264 mediainfo
 sleep 2
+# Packages only for the Raspberry Pi (comment if installing on something else)
+pacman -S --noconfirm --needed libbcm2835 xf86-video-fbturbo-git kodi-rbp omxplayer
 # Sound packages
-pacman -S --noconfirm --needed alsa-utils alsa-plugins pulseaudio pulseaudio-alsa paprefs pavucontrol timidity++ timidity-freepats libbcm2835
+pacman -S --noconfirm --needed alsa-utils alsa-plugins pulseaudio pulseaudio-alsa paprefs pavucontrol timidity++ timidity-freepats
 sleep 2
 # Xorg packages
-pacman -S --noconfirm --needed unrar unzip unarj p7zip gzip bzip2 xarchiver xf86-video-fbturbo-git mesa-libgl ttf-freefont ttf-dejavu xorg-server xorg-xinit kodi-rbp libksane xsane-gimp inkscape phonon-qt4-gstreamer phonon-qt5-gstreamer gparted audacious gimp libreoffice-still jre8-openjdk jdk8-openjdk xsane kactivities4
+pacman -S --noconfirm --needed unrar unzip unarj p7zip gzip bzip2 xarchiver mesa-libgl ttf-freefont ttf-dejavu xorg-server xorg-xinit libksane xsane-gimp inkscape phonon-qt4-gstreamer phonon-qt5-gstreamer gparted audacious gimp libreoffice-still jre8-openjdk jdk8-openjdk xsane kactivities4
 sleep 2
 # Lxde packages
-pacman -S --noconfirm --needed chromium calligra-krita gpicview lxappearance lxappearance-obconf lxde-common lxde-icon-theme lxdm lxinput lxlauncher lxmenu-data lxmusic lxpanel lxrandr lxsession lxtask lxterminal openbox pcmanfm omxplayer transmission-gtk leafpad mediainfo-gui
+pacman -S --noconfirm --needed chromium calligra-krita gpicview lxappearance lxappearance-obconf lxde-common lxde-icon-theme lxdm lxinput lxlauncher lxmenu-data lxmusic lxpanel lxrandr lxsession lxtask lxterminal openbox pcmanfm transmission-gtk leafpad mediainfo-gui
 sleep 2
 # Game packages
 pacman -S --noconfirm --needed openra kobodeluxe klines
