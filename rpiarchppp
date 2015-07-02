@@ -1,7 +1,7 @@
 #!/bin/bash
 # Advanced script to install and configure Arch with ppp on indicated sdcardforarch
 # More info and newest @ http://www.github.com/iugamarian/raspberrypisetup
-# Version 1.30 tested and it works
+# Version 1.31 tested and it works
 # Forked from ShorTie	<idiot@dot.com> 
 # Brought to you by iugamarian	<iugamarian@yahoo.com> 
 # Configuration - choose here carefuly 
@@ -294,7 +294,7 @@ echo ""
 # "ppp" depends on "libpcap" which depends on "libnl" which then has all it needs from root.
 # So the install order needs to be: libnl -> libpcap -> ppp
 # Offline install is done later one by one by script with pacman -U package
-coredblink=http://eu.mirror.archlinuxarm.org/"$rpiversion"/core/core.db.tar.gz
+coredblink=http://no.mirror.archlinuxarm.org/"$rpiversion"/core/core.db.tar.gz
 wget $coredblink
 mkdir archcoredbextract
 bsdtar -xpf core.db.tar.gz -C archcoredbextract
@@ -305,9 +305,9 @@ echo $namelibnl
 echo $namelibpcap
 echo $nameppp
 #And the links are:
-linklibnl=http://eu.mirror.archlinuxarm.org/"$rpiversion"/core/"$namelibnl"-"$rpiversion".pkg.tar.xz
-linklibpcap=http://eu.mirror.archlinuxarm.org/"$rpiversion"/core/"$namelibpcap"-"$rpiversion".pkg.tar.xz
-linkppp=http://eu.mirror.archlinuxarm.org/"$rpiversion"/core/"$nameppp"-"$rpiversion".pkg.tar.xz
+linklibnl=http://no.mirror.archlinuxarm.org/"$rpiversion"/core/"$namelibnl"-"$rpiversion".pkg.tar.xz
+linklibpcap=http://no.mirror.archlinuxarm.org/"$rpiversion"/core/"$namelibpcap"-"$rpiversion".pkg.tar.xz
+linkppp=http://no.mirror.archlinuxarm.org/"$rpiversion"/core/"$nameppp"-"$rpiversion".pkg.tar.xz
 echo ""
 echo "Downloading the packages into the installed /root dir:"
 ######Directory changing beginning
@@ -338,6 +338,7 @@ cp /etc/ppp/chap-secrets.pacorig /etc/ppp/chap-secrets
 sleep 1
 sync
 sleep 2
+echo ""
 echo "Stopping systemd messages that need to run systemctl daemon reload:"
 echo ""
 # All of this is needed, including sleeps, to make systemd stop giving this messages
@@ -370,17 +371,41 @@ systemctl daemon-reload
 sleep 5
 sync
 sleep 5
+systemctl daemon-reload
+sleep 5
+sync
+sleep 5
+systemctl stop ppp@$pppprovider.service
+systemctl disable ppp@$pppprovider.service
+sleep 5
+systemctl daemon-reload
+sleep 5
+sync
+sleep 5
+systemctl enable ppp@$pppprovider.service
+systemctl start ppp@$pppprovider.service
+sleep 5
+sync
+sleep 5
+systemctl daemon-reload
+sleep 5
+sync
+sleep 5
+systemctl daemon-reload
+sleep 5
 echo ""
 echo "Completed installing ppp."
 echo ""
 echo "Internet is available if configuration is correct."
+echo ""
+echo "But if not paid in time or in a hotel it will be redirected by dns."
 echo ""
 EOF
 # ... for #!/bin/bash if I put "" gives me an error because of the !
 echo '#!/bin/bash' > install2upgrade.sh
 cat <<EOF >> install2upgrade.sh
 echo ""
-echo "Upgrading system..."
+echo "Upgrading system... if redirected error 404 will appear..."
 echo ""
 sync
 sleep 5
@@ -610,7 +635,7 @@ sed -i 's/mmcblk0p2/mmcblk0p3/g' sdcardforarch/boot/cmdline.txt
 sed -i 's/mmcblk0p2/mmcblk0p3/g' sdcardforarch/etc/fstab
 echo "/dev/mmcblk0p2	none      	swap      	defaults  	0 0" >> sdcardforarch/etc/fstab
 # Choosing a mirror
-sed -i 's/Server = http:\/\/mirror.archlinuxarm.org\/$arch\/$repo/#Server = http:\/\/mirror.archlinuxarm.org\/$arch\/$repo\n\n\tServer = http:\/\/eu.mirror.archlinuxarm.org\/$arch\/$repo/g' sdcardforarch/etc/pacman.d/mirrorlist
+sed -i 's/Server = http:\/\/mirror.archlinuxarm.org\/$arch\/$repo/#Server = http:\/\/mirror.archlinuxarm.org\/$arch\/$repo\n\n\tServer = http:\/\/no.mirror.archlinuxarm.org\/$arch\/$repo/g' sdcardforarch/etc/pacman.d/mirrorlist
 echo "Configuring  ppp with information from configuration..."
 echo ""
 mkdir sdcardforarch/etc/ppp
