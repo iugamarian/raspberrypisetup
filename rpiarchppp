@@ -307,7 +307,7 @@ echo ""
 # "ppp" depends on "libpcap" which depends on "libnl" which then has all it needs from root.
 # So the install order needs to be: libnl -> libpcap -> ppp
 # Offline install is done later one by one by script with pacman -U package
-coredblink=http://no.mirror.archlinuxarm.org/"$rpiversion"/core/core.db.tar.gz
+coredblink=http://eu.mirror.archlinuxarm.org/"$rpiversion"/core/core.db.tar.gz
 wget $coredblink
 mkdir archcoredbextract
 bsdtar -xpf core.db.tar.gz -C archcoredbextract
@@ -318,9 +318,9 @@ echo $namelibnl
 echo $namelibpcap
 echo $nameppp
 #And the links are:
-linklibnl=http://no.mirror.archlinuxarm.org/"$rpiversion"/core/"$namelibnl"-"$rpiversion".pkg.tar.xz
-linklibpcap=http://no.mirror.archlinuxarm.org/"$rpiversion"/core/"$namelibpcap"-"$rpiversion".pkg.tar.xz
-linkppp=http://no.mirror.archlinuxarm.org/"$rpiversion"/core/"$nameppp"-"$rpiversion".pkg.tar.xz
+linklibnl=http://eu.mirror.archlinuxarm.org/"$rpiversion"/core/"$namelibnl"-"$rpiversion".pkg.tar.xz
+linklibpcap=http://eu.mirror.archlinuxarm.org/"$rpiversion"/core/"$namelibpcap"-"$rpiversion".pkg.tar.xz
+linkppp=http://eu.mirror.archlinuxarm.org/"$rpiversion"/core/"$nameppp"-"$rpiversion".pkg.tar.xz
 echo ""
 echo "Downloading the packages into the installed /root dir:"
 ######Directory changing beginning
@@ -686,7 +686,7 @@ sed -i 's/mmcblk0p2/mmcblk0p3/g' sdcardforarch/boot/cmdline.txt
 sed -i 's/mmcblk0p2/mmcblk0p3/g' sdcardforarch/etc/fstab
 echo "/dev/mmcblk0p2	none      	swap      	defaults  	0 0" >> sdcardforarch/etc/fstab
 # Choosing a mirror
-sed -i 's/Server = http:\/\/mirror.archlinuxarm.org\/$arch\/$repo/#Server = http:\/\/mirror.archlinuxarm.org\/$arch\/$repo\n\n\tServer = http:\/\/no.mirror.archlinuxarm.org\/$arch\/$repo/g' sdcardforarch/etc/pacman.d/mirrorlist
+sed -i 's/Server = http:\/\/mirror.archlinuxarm.org\/$arch\/$repo/#Server = http:\/\/mirror.archlinuxarm.org\/$arch\/$repo\n\nServer = http:\/\/eu.mirror.archlinuxarm.org\/$arch\/$repo/g' sdcardforarch/etc/pacman.d/mirrorlist
 echo "Configuring  ppp with information from configuration..."
 echo ""
 mkdir sdcardforarch/etc/ppp
