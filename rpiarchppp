@@ -1,7 +1,7 @@
 #!/bin/bash
 # Advanced script to install and configure Arch with ppp on indicated sdcardforarch
 # More info and newest @ http://www.github.com/iugamarian/raspberrypisetup
-# Version 1.32 tested and it works
+# Version 1.33 tested and it works
 # Forked from ShorTie	<idiot@dot.com> 
 # Brought to you by iugamarian	<iugamarian@yahoo.com> 
 # Configuration - choose here carefuly 
@@ -455,7 +455,7 @@ mkdir /usr/bin
 mkdir /root/.kodi/temp/
 echo '#!/bin/bash' > /usr/bin/kodiexitfixroot
 echo '' >>  /usr/bin/kodiexitfixroot
-echo "if \[\[ \$\(tail -1 /root/.kodi/temp/kodi.log | grep \"application stopped...\"\) \]\]" >> /usr/bin/kodiexitfixroot
+echo "if [[ \\\$(tail -1 /root/.kodi/temp/kodi.log | grep \"application stopped...\") ]]" >> /usr/bin/kodiexitfixroot
 echo 'then' >> /usr/bin/kodiexitfixroot
 echo '        killall kodi.bin' >> /usr/bin/kodiexitfixroot
 echo '        mv /root/.kodi/temp/kodi.log /root/.kodi/temp/kodi.old.log' >> /usr/bin/kodiexitfixroot
@@ -468,7 +468,7 @@ sleep 2
 # Hack to allow mc to open videos with omxplayer
 cp /usr/lib/mc/ext.d/video.sh /usr/lib/mc/ext.d/video.sh.old
 echo '#!/bin/sh' > /usr/lib/mc/ext.d/video.sh
-echo "omxplayer \"\${MC_EXT_FILENAME}\"" >> /usr/lib/mc/ext.d/video.sh
+echo "omxplayer \"\\\${MC_EXT_FILENAME}\"" >> /usr/lib/mc/ext.d/video.sh
 pkgfile --update
 sleep 2
 sed -i 's/load-module module-suspend-on-idle/#load-module module-suspend-on-idle/g' /etc/pulse/default.pa
@@ -574,7 +574,7 @@ echo "Activating auto startx at root login..."
 echo ""
 cp /root/.bash_profile /root/.bash_profile.old
 echo "[[ -f ~/.bashrc ]] && . ~/.bashrc" > /root/.bash_profile
-echo "[[ -z \$DISPLAY && \$XDG_VTNR -eq 1 ]] && exec startx" >> /root/.bash_profile
+echo "[[ -z \\\$DISPLAY && \\\$XDG_VTNR -eq 1 ]] && exec startx" >> /root/.bash_profile
 echo 'alias pk="TMPDIR=/root/tmp/pkgs/ EDITOR=nano packer"' >> /root/.bashrc
 echo 'alias yt="youtube-dl -f mp4/best"' >> /root/.bashrc
 . ~/.bashrc
