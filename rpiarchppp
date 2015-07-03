@@ -382,9 +382,9 @@ echo "Installing ppp..."
 echo ""
 sync
 sleep 2
-pacman -U --noconfirm $namelibnl-$rpiversion.pkg.tar.xz
-pacman -U --noconfirm $namelibpcap-$rpiversion.pkg.tar.xz
-pacman -U --noconfirm $nameppp-$rpiversion.pkg.tar.xz
+pacman -U --noconfirm --needed $namelibnl-$rpiversion.pkg.tar.xz
+pacman -U --noconfirm --needed $namelibpcap-$rpiversion.pkg.tar.xz
+pacman -U --noconfirm --needed $nameppp-$rpiversion.pkg.tar.xz
 sleep 1
 ln -s /etc/ppp/peers/$pppprovider /etc/ppp/peers/provider
 sleep 1
@@ -396,6 +396,7 @@ sleep 2
 echo ""
 echo "Stopping systemd messages that need to run systemctl daemon reload:"
 echo ""
+poff -a
 # All of this is needed, including sleeps, to make systemd stop giving this messages
 sleep 1
 systemctl daemon-reload
@@ -425,6 +426,7 @@ sleep 2
 systemctl daemon-reload
 sleep 3
 sync
+poff -a
 sleep 2
 systemctl daemon-reload
 sleep 3
