@@ -221,6 +221,27 @@ umount "$sdcardforarch"p6
 umount "$sdcardforarch"p7
 umount "$sdcardforarch"p8
 umount "$sdcardforarch"p9
+swapoff "$sdcardforarch"1
+swapoff "$sdcardforarch"2
+swapoff "$sdcardforarch"3
+swapoff "$sdcardforarch"4
+swapoff "$sdcardforarch"5
+swapoff "$sdcardforarch"6
+swapoff "$sdcardforarch"7
+swapoff "$sdcardforarch"8
+swapoff "$sdcardforarch"9
+swapoff "$sdcardforarch"p1
+swapoff "$sdcardforarch"p2
+swapoff "$sdcardforarch"p3
+swapoff "$sdcardforarch"p4
+swapoff "$sdcardforarch"p5
+swapoff "$sdcardforarch"p6
+swapoff "$sdcardforarch"p7
+swapoff "$sdcardforarch"p8
+swapoff "$sdcardforarch"p9
+echo ""
+echo "Wait..."
+sleep 5
 echo ""
 echo "Deleting MBR and fat allocation table general area with dd:"
 # Need to dd more because fat filesystems may get confused about random
@@ -305,12 +326,14 @@ echo "Downloading Arch image with wget:"
 echo ""
 echo ""
 if [ "$rpiversion" = "armv6h" ]; then
-wget -c http://archlinuxarm.org/os/ArchLinuxARM-rpi-latest.tar.gz
+# The nl mirror is faster
+wget -c http://nl.mirror.archlinuxarm.org/os/ArchLinuxARM-rpi-latest.tar.gz
 echo "Unpacking Arch image with bsdtar... wait... (armv6h)"
 bsdtar -xpf ArchLinuxARM-rpi-latest.tar.gz -C sdcardforarch
 fi
 if [ "$rpiversion" = "armv7h" ]; then
-wget -c http://archlinuxarm.org/os/ArchLinuxARM-rpi-2-latest.tar.gz
+# The nl mirror is faster
+wget -c http://nl.mirror.archlinuxarm.org/os/ArchLinuxARM-rpi-2-latest.tar.gz
 echo "Unpacking Arch image with bsdtar... wait... (armv7h)"
 bsdtar -xpf ArchLinuxARM-rpi-2-latest.tar.gz -C sdcardforarch
 fi
@@ -326,7 +349,7 @@ echo ""
 # "ppp" depends on "libpcap" which depends on "libnl" which then has all it needs from root.
 # So the install order needs to be: libnl -> libpcap -> ppp
 # Offline install is done later one by one by script with pacman -U package
-coredblink=http://eu.mirror.archlinuxarm.org/"$rpiversion"/core/core.db.tar.gz
+coredblink=http://nl.mirror.archlinuxarm.org/"$rpiversion"/core/core.db.tar.gz
 wget $coredblink
 mkdir archcoredbextract
 bsdtar -xpf core.db.tar.gz -C archcoredbextract
@@ -337,9 +360,9 @@ echo $namelibnl
 echo $namelibpcap
 echo $nameppp
 #And the links are:
-linklibnl=http://eu.mirror.archlinuxarm.org/"$rpiversion"/core/"$namelibnl"-"$rpiversion".pkg.tar.xz
-linklibpcap=http://eu.mirror.archlinuxarm.org/"$rpiversion"/core/"$namelibpcap"-"$rpiversion".pkg.tar.xz
-linkppp=http://eu.mirror.archlinuxarm.org/"$rpiversion"/core/"$nameppp"-"$rpiversion".pkg.tar.xz
+linklibnl=http://nl.mirror.archlinuxarm.org/"$rpiversion"/core/"$namelibnl"-"$rpiversion".pkg.tar.xz
+linklibpcap=http://nl.mirror.archlinuxarm.org/"$rpiversion"/core/"$namelibpcap"-"$rpiversion".pkg.tar.xz
+linkppp=http://nl.mirror.archlinuxarm.org/"$rpiversion"/core/"$nameppp"-"$rpiversion".pkg.tar.xz
 echo ""
 echo "Downloading the packages into the installed /root dir:"
 ######Directory changing beginning
@@ -707,7 +730,7 @@ sed -i 's/mmcblk0p2/mmcblk0p3/g' sdcardforarch/boot/cmdline.txt
 sed -i 's/mmcblk0p2/mmcblk0p3/g' sdcardforarch/etc/fstab
 echo "/dev/mmcblk0p2	none      	swap      	defaults  	0 0" >> sdcardforarch/etc/fstab
 # Choosing a mirror
-sed -i 's/Server = http:\/\/mirror.archlinuxarm.org\/$arch\/$repo/#Server = http:\/\/mirror.archlinuxarm.org\/$arch\/$repo\n\nServer = http:\/\/eu.mirror.archlinuxarm.org\/$arch\/$repo/g' sdcardforarch/etc/pacman.d/mirrorlist
+sed -i 's/Server = http:\/\/mirror.archlinuxarm.org\/$arch\/$repo/#Server = http:\/\/mirror.archlinuxarm.org\/$arch\/$repo\n\nServer = http:\/\/nl.mirror.archlinuxarm.org\/$arch\/$repo/g' sdcardforarch/etc/pacman.d/mirrorlist
 echo "Configuring  ppp with information from configuration..."
 echo ""
 mkdir sdcardforarch/etc/ppp
