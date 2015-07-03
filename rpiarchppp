@@ -496,7 +496,7 @@ sed -i 's/modconf autodetect block/block autodetect modconf/g' /etc/mkinitcpio.c
 sleep 2
 sync
 sleep 2
-mkinitcpio -k $(uname -r) -g /boot/initrd
+mkinitcpio -k \$(uname -r) -g /boot/initrd
 sleep 2
 sync
 sleep 2
