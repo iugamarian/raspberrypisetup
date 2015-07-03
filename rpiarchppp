@@ -1,7 +1,7 @@
 #!/bin/bash
 # Advanced script to install and configure Arch with ppp on indicated sdcardforarch
 # More info and newest @ http://www.github.com/iugamarian/raspberrypisetup
-# Version 1.37 tested and it works
+# Version 1.38 tested and it works
 # Forked from ShorTie	<idiot@dot.com> 
 # Brought to you by iugamarian	<iugamarian@yahoo.com> 
 # Configuration - choose here carefuly 
@@ -529,7 +529,7 @@ echo "exec startlxde" > /root/.xinitrc
 echo ""
 echo "Configuring boot and /etc/fstab to use UUID for partitions."
 echo ""
-sed -i 's/\/dev\/mmcblk0p3/UUID=`blkid -s UUID -o value \/dev\/mmcblk0p3`/g' /boot/cmdline.txt
+sed -i 's/\/dev\/mmcblk0p3/UUID=\`blkid -s UUID -o value \/dev\/mmcblk0p3\`/g' /boot/cmdline.txt
 sed -i 's/rootwait/rootwait initrd=0x01f00000/g' /boot/cmdline.txt
 echo "initramfs initrd 0x01f00000" >> /boot/config.txt
 genfstab -U / > /etc/fstab
