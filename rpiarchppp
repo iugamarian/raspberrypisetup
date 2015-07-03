@@ -113,13 +113,32 @@ echo ""
 sleep 2
 # Allowing dd to be able to clear MBR (permission)
 viewsudouser=`logname`
-if [ "$viewsudouser" != "root" ]; then
-echo "Sudo is used by $viewsudouser."
-echo "Adding user $viewsudouser to the disk group."
-usermod -G disk --append $viewsudouser
-else
-echo "Sudo is not used. Adding root to the disk group."
+viewroot=""
+echo $viewsudouser |wc -c
+# A string echo "" is seen by wc as having 1 character so n+1, and a failed grep has a wc of 0
+if [ `echo $viewsudouser | grep "root" |wc -c` != 0 ] && [ `echo $viewsudouser |wc -c` = 5 ]; then
+viewroot="root"
+fi
+# On Arch a no login name gives a wc of 1
+if [ `echo $viewsudouser |wc -c` = 1 ]; then
+viewroot="root"
+fi
+# On other systems no login name maybe gives no login name
+if [ `echo $viewsudouser | grep "no login name" |wc -c` != 0 ]; then
+viewroot="root"
+fi
+if [ `echo $viewroot |wc -c` != 1 ]; then
+echo ""
+echo "Only root."
+echo "Adding root to the disk group."
+echo""
 usermod -G disk --append root
+else
+echo ""
+echo "Sudo is used by a user named $viewsudouser."
+echo "Adding user named $viewsudouser to the disk group."
+echo ""
+usermod -G disk --append $viewsudouser
 fi
 echo ""
 echo "Checking for programs that are needed:"
@@ -414,6 +433,8 @@ echo "Internet is available if configuration is correct."
 echo ""
 echo "But if not paid in time or in a hotel it will be redirected by dns."
 echo ""
+echo "============================================================"
+echo ""
 echo "Running systemctl status ppp@$provider.service"
 echo ""
 systemctl status ppp@$pppprovider.service
@@ -461,11 +482,11 @@ sleep 2
 # Making sure package lists are up to date right now
 pacman -Syu --noconfirm
 sleep 2
+# Packages only for the Raspberry Pi or ArchLinuxARM (comment if installing on something else)
+pacman -S --noconfirm --needed libbcm2835 xf86-video-fbturbo-git kodi-rbp omxplayer packer
 # Console packages - fdisk is in util-linux which is in base-devel
-pacman -S --noconfirm --needed base base-devel arch-install-scripts dosfstools mkinitcpio libarchive pkgfile gptfdisk parted mkinitcpio upower mc libnewt newt-syrup openssh openssl wiringpi espeak mpg123 flac lame packer youtube-dl imagemagick git wget libx264 mediainfo
+pacman -S --noconfirm --needed base base-devel arch-install-scripts dosfstools mkinitcpio libarchive pkgfile iotop gptfdisk parted mkinitcpio upower mc libnewt newt-syrup openssh openssl wiringpi espeak mpg123 flac lame youtube-dl imagemagick git wget libx264 mediainfo
 sleep 2
-# Packages only for the Raspberry Pi (comment if installing on something else)
-pacman -S --noconfirm --needed libbcm2835 xf86-video-fbturbo-git kodi-rbp omxplayer
 # Sound packages
 pacman -S --noconfirm --needed alsa-utils alsa-plugins pulseaudio pulseaudio-alsa paprefs pavucontrol timidity++ timidity-freepats
 sleep 2
@@ -748,6 +769,18 @@ echo "File /etc/systemd/system/ppp\@.service.d/ppp.conf is as follows:"
 echo ""
 cat sdcardforarch/etc/systemd/system/ppp\@.service.d/ppp.conf
 echo ""
+echo "Configuring man-db.timer and updatedb.timer to start later."
+
+mkdir sdcardforarch/etc/systemd/system/man-db.timer.d
+echo "[Timer]" > sdcardforarch/etc/systemd/system/man-db.timer.d/man-db.timer.conf
+echo "OnCalender=" >> sdcardforarch/etc/systemd/system/man-db.timer.d/man-db.timer.conf
+echo "OnCalendar=13:15" >> sdcardforarch/etc/systemd/system/man-db.timer.d/man-db.timer.conf
+echo "OnBootSec=1200" >> sdcardforarch/etc/systemd/system/man-db.timer.d/man-db.timer.conf
+mkdir sdcardforarch/etc/systemd/system/updatedb.timer.d
+echo "[Timer]" > sdcardforarch/etc/systemd/system/updatedb.timer.d/updatedb.timer.conf
+echo "OnCalender=" >> sdcardforarch/etc/systemd/system/updatedb.timer.d/updatedb.timer.conf
+echo "OnCalendar=13:45" >> sdcardforarch/etc/systemd/system/updatedb.timer.d/updatedb.timer.conf
+echo "OnBootSec=1800" >> sdcardforarch/etc/systemd/system/updatedb.timer.d/updatedb.timer.conf
 echo ""
 echo "Conf file to stop kernel messages:"
 echo "/etc/sysctl.d/20-quiet-prink.conf"
