@@ -1,7 +1,7 @@
 #!/bin/bash
 # Advanced script to install and configure Arch with ppp on indicated sdcardforarch
 # More info and newest @ http://www.github.com/iugamarian/raspberrypisetup
-# Version 1.36 tested and it works
+# Version 1.37 tested and it works
 # Forked from ShorTie	<idiot@dot.com> 
 # Brought to you by iugamarian	<iugamarian@yahoo.com> 
 # Configuration - choose here carefuly 
@@ -114,7 +114,6 @@ sleep 2
 # Allowing dd to be able to clear MBR (permission)
 viewsudouser=`logname`
 viewroot=""
-echo $viewsudouser |wc -c
 # A string echo "" is seen by wc as having 1 character so n+1, and a failed grep has a wc of 0
 if [ `echo $viewsudouser | grep "root" |wc -c` != 0 ] && [ `echo $viewsudouser |wc -c` = 5 ]; then
 viewroot="root"
