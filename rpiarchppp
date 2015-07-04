@@ -529,7 +529,8 @@ echo "exec startlxde" > /root/.xinitrc
 echo ""
 echo "Configuring boot and /etc/fstab to use UUID for partitions."
 echo ""
-sed -i 's/\/dev\/mmcblk0p3/UUID=\`blkid -s UUID -o value \/dev\/mmcblk0p3\`/g' /boot/cmdline.txt
+# The UUID is determined in rpiarchppp as sed can't execute `program` and $variable
+sed -i 's/\/dev\/mmcblk0p3/UUID=`blkid -s UUID -o value $rootpart`/g' /boot/cmdline.txt
 sed -i 's/rootwait/rootwait initrd=0x01f00000/g' /boot/cmdline.txt
 echo "initramfs initrd 0x01f00000" >> /boot/config.txt
 genfstab -U / > /etc/fstab
