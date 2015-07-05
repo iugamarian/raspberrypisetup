@@ -498,7 +498,8 @@ reboot
 EOF
 # ... for #!/bin/bash if I put "" gives me an error because of the !
 echo '#!/bin/bash' > install3lxde.sh
-cat <<EOF >> install3lxde.sh
+# Having cat with EOF inside, it is needed to use something else like EOG
+cat <<EOG >> install3lxde.sh
 echo ""
 echo "Installing lxde..."
 echo ""
@@ -621,7 +622,7 @@ echo "Added mc option to open all videos with omxplayer."
 echo ""
 sleep 2
 sync
-EOF
+EOG
 echo '#!/bin/bash' > install4autologinroot.sh
 cat <<EOF >> install4autologinroot.sh
 echo ""
