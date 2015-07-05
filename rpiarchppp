@@ -530,7 +530,7 @@ echo "exec startlxde" > /root/.xinitrc
 echo ""
 echo "Configuring boot and /etc/fstab to use UUID for partitions."
 echo ""
-# The UUID is determined in rpiarchppp as sed can't execute `program` and $variable
+# The UUID is determined in rpiarchppp as sed can't execute or show variable
 sed -i 's/\/dev\/mmcblk0p3/UUID=`blkid -s UUID -o value $rootpart`/g' /boot/cmdline.txt
 sed -i 's/rootwait/rootwait initrd=0x01f00000/g' /boot/cmdline.txt
 echo "initramfs initrd 0x01f00000" >> /boot/config.txt
@@ -904,6 +904,8 @@ echo $start_time
 echo "Finished at:"
 echo ""
 echo $end_time
+echo ""
+echo "Password for root is root. Without the dot."
 echo ""
 echo "Exiting happy."
 echo ""
