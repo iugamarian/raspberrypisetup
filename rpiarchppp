@@ -310,7 +310,7 @@ echo ""
 mkfs.vfat -n BOOTRPI $bootpart
 mkswap $swappart
 # Disabling lazy options so that all inodes get written now not bit by bit later.
-mkfs.ext4 -m 0 -L ARCHRPI -E lazy_itable_init=0,lazy_journal_init=0 $rootpart
+mke2fs -t ext4 -m 0 -F -L ARCHRPI -E lazy_itable_init=0,lazy_journal_init=0 $rootpart
 echo ""
 echo "Mounting partitions:"
 echo ""
