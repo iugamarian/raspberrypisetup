@@ -1,7 +1,7 @@
 #!/bin/bash
 # Advanced script to install and configure Arch with ppp on indicated sdcardforarch
 # More info and newest @ http://www.github.com/iugamarian/raspberrypisetup
-# Version 1.39 tested and it works
+# Version 1.40 tested and it works
 # Forked from ShorTie	<idiot@dot.com> 
 # Brought to you by iugamarian	<iugamarian@yahoo.com> 
 # Configuration - choose here carefuly 
@@ -510,7 +510,7 @@ sleep 2
 # Packages only for the Raspberry Pi or ArchLinuxARM (comment if installing on something else)
 pacman -S --noconfirm --needed libbcm2835 xf86-video-fbturbo-git kodi-rbp omxplayer packer
 # Console packages - fdisk is in util-linux which is in base-devel
-pacman -S --noconfirm --needed base base-devel arch-install-scripts dosfstools mkinitcpio libarchive pkgfile iotop gptfdisk parted mkinitcpio upower mc libnewt newt-syrup openssh openssl wiringpi espeak mpg123 flac lame youtube-dl imagemagick git wget libx264 mediainfo
+pacman -S --noconfirm --needed base base-devel arch-install-scripts dosfstools libarchive pkgfile iotop gptfdisk parted mkinitcpio upower mc libnewt newt-syrup openssh openssl wiringpi espeak mpg123 flac lame youtube-dl imagemagick git wget libx264 mediainfo
 sleep 2
 # Sound packages
 pacman -S --noconfirm --needed alsa-utils alsa-plugins pulseaudio pulseaudio-alsa paprefs pavucontrol timidity++ timidity-freepats
@@ -539,7 +539,8 @@ echo ""
 echo "Making an initramfs giving the kernel the ability to boot by UUID."
 echo ""
 echo "This is done automatically for every kernel update."
-sed -i 's/modconf autodetect block/block autodetect modconf/g' /etc/mkinitcpio.conf
+sed -i 's/ block / /g' /etc/mkinitcpio.conf
+sed -i 's/udev/udev block/g' /etc/mkinitcpio.conf
 sleep 2
 sync
 sleep 2
