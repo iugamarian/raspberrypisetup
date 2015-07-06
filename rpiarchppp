@@ -546,6 +546,7 @@ sync
 sleep 2
 mkinitcpio -k \$(uname -r) -g /boot/initrd
 # mkinitcpio needs to be called on every kernel update, depmod is called so...
+rm /usr/bin/depmodbin
 rename depmod depmodbin /usr/bin/depmod
 echo '#!/bin/bash' > /usr/bin/depmod
 echo "depmodbin \\\$1" >> /usr/bin/depmod
@@ -563,10 +564,24 @@ echo '#!/bin/bash' > /usr/bin/kodiexitfixroot
 echo '' >>  /usr/bin/kodiexitfixroot
 echo "if [[ \\\$(tail -1 /root/.kodi/temp/kodi.log | grep \"application stopped...\") ]]" >> /usr/bin/kodiexitfixroot
 echo 'then' >> /usr/bin/kodiexitfixroot
-echo '        killall kodi.bin' >> /usr/bin/kodiexitfixroot
-echo '        mv /root/.kodi/temp/kodi.log /root/.kodi/temp/kodi.old.log' >> /usr/bin/kodiexitfixroot
-echo '        chvt 2 && sleep 2 && chvt 1' >> /usr/bin/kodiexitfixroot
+echo '    killall kodi.bin' >> /usr/bin/kodiexitfixroot
+echo '    mv /root/.kodi/temp/kodi.log /root/.kodi/temp/kodi.old.log' >> /usr/bin/kodiexitfixroot
+echo '    sleep 1 && chvt 2 && sleep 1 && chvt 1' >> /usr/bin/kodiexitfixroot
 echo 'fi' >> /usr/bin/kodiexitfixroot
+# check depmod is not replaced and repair it again if it has
+echo 'if [[ \`cat /usr/bin/depmod |grep "mkinitcpio" |wc -c\` = 0 ]]' >> /usr/bin/kodiexitfixroot
+echo 'then' >> /usr/bin/kodiexitfixroot
+# in case replacing is still in progress
+rm /usr/bin/depmodbin
+echo '    sleep 2' >> /usr/bin/kodiexitfixroot
+echo '    rename depmod depmodbin /usr/bin/depmod' >> /usr/bin/kodiexitfixroot
+echo "    echo '#!/bin/bash' > /usr/bin/depmod" >> /usr/bin/kodiexitfixroot
+# Indicating new version instead of current version
+echo '    echo "depmodbin \\\$1" >> /usr/bin/depmod' >> /usr/bin/kodiexitfixroot
+echo '    echo "mkinitcpio -k \\\$1 -g /boot/initrd" >> /usr/bin/depmod' >> /usr/bin/kodiexitfixroot
+echo '    echo "exit 0" >> /usr/bin/depmod' >> /usr/bin/kodiexitfixroot
+echo 'fi' >> /usr/bin/kodiexitfixroot
+echo "exit 0" >> /usr/bin/kodiexitfixroot
 # Arch uses systemd timers not cron by default
 cat <<EOF > /etc/systemd/system/kodiexitfixroot.timer
 [Unit]
