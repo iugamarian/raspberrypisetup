@@ -545,14 +545,6 @@ sleep 2
 sync
 sleep 2
 mkinitcpio -k \$(uname -r) -g /boot/initrd
-# mkinitcpio needs to be called on every kernel update, depmod is called so...
-rm /usr/bin/depmodbin
-rename depmod depmodbin /usr/bin/depmod
-echo '#!/bin/bash' > /usr/bin/depmod
-echo "depmodbin \\\$1" >> /usr/bin/depmod
-# Indicating new version instead of current version
-echo "mkinitcpio -k \\\$1 -g /boot/initrd" >> /usr/bin/depmod
-echo "exit 0" >> /usr/bin/depmod
 sleep 2
 sync
 sleep 2
@@ -568,7 +560,7 @@ echo '    killall kodi.bin' >> /usr/bin/kodiexitfixroot
 echo '    mv /root/.kodi/temp/kodi.log /root/.kodi/temp/kodi.old.log' >> /usr/bin/kodiexitfixroot
 echo '    sleep 1 && chvt 2 && sleep 1 && chvt 1' >> /usr/bin/kodiexitfixroot
 echo 'fi' >> /usr/bin/kodiexitfixroot
-# check depmod is not replaced and repair it again if it has
+# mkinitcpio needs to be called on every kernel update, depmod is called so...
 echo 'if [[ \`cat /usr/bin/depmod |grep "mkinitcpio" |wc -c\` = 0 ]]' >> /usr/bin/kodiexitfixroot
 echo 'then' >> /usr/bin/kodiexitfixroot
 # in case replacing is still in progress
