@@ -545,6 +545,13 @@ sleep 2
 sync
 sleep 2
 mkinitcpio -k \$(uname -r) -g /boot/initrd
+# mkinitcpio needs to be called on every kernel update, depmod is called so...
+rename depmod depmodbin /usr/bin/depmod
+echo '#!/bin/bash' > /usr/bin/depmod
+echo "depmodbin \\\$1" >> /usr/bin/depmod
+# Indicating new version instead of current version
+echo "mkinitcpio -k \\\$1 -g /boot/initrd" >> /usr/bin/depmod
+echo "exit 0" >> /usr/bin/depmod
 sleep 2
 sync
 sleep 2
