@@ -475,6 +475,7 @@ echo "Repeat this script until no more warnings appear in systemctl status."
 sleep 2
 sync
 EOF
+chmod a+x install1ppp.sh
 # ... for #!/bin/bash if I put "" gives me an error because of the !
 echo '#!/bin/bash' > install2upgrade.sh
 cat <<EOF >> install2upgrade.sh
@@ -496,6 +497,7 @@ sync
 sleep 3
 reboot
 EOF
+chmod a+x install2upgrade.sh
 # ... for #!/bin/bash if I put "" gives me an error because of the !
 echo '#!/bin/bash' > install3lxde.sh
 # Having cat with EOF inside, it is needed to use something else like EOG
@@ -574,9 +576,10 @@ echo '    echo "    depmodbin \\\$1" >> /usr/bin/depmod' >> /usr/bin/kodiexitfix
 echo '    echo "    mkinitcpio -k \\\$1 -g /boot/initrd" >> /usr/bin/depmod' >> /usr/bin/kodiexitfixroot
 echo '    echo "fi" >> /usr/bin/depmod' >> /usr/bin/kodiexitfixroot
 echo '    echo "exit 0" >> /usr/bin/depmod' >> /usr/bin/kodiexitfixroot
-echo '    chmod +x /usr/bin/depmod' >> /usr/bin/kodiexitfixroot
+echo '    chmod a+x /usr/bin/depmod' >> /usr/bin/kodiexitfixroot
 echo 'fi' >> /usr/bin/kodiexitfixroot
 echo "exit 0" >> /usr/bin/kodiexitfixroot
+chmod a+x /usr/bin/kodiexitfixroot
 # Arch uses systemd timers not cron by default
 cat <<EOF > /etc/systemd/system/kodiexitfixroot.timer
 [Unit]
@@ -641,6 +644,7 @@ echo ""
 sleep 2
 sync
 EOG
+chmod a+x install3lxde.sh
 echo '#!/bin/bash' > install4autologinroot.sh
 cat <<EOF >> install4autologinroot.sh
 echo ""
@@ -704,6 +708,7 @@ echo ""
 sleep 2
 sync
 EOF
+chmod a+x install4autologinroot.sh
 echo '#!/bin/bash' > install5autostartxroot.sh
 cat <<EOF >> install5autostartxroot.sh
 echo ""
@@ -726,6 +731,7 @@ echo ""
 sleep 2
 sync
 EOF
+chmod a+x install5autostartxroot.sh
 echo '#!/bin/bash' > install6localesro-edit.sh
 cat <<EOF >> install6localesro-edit.sh
 echo ""
@@ -758,6 +764,7 @@ echo "Setting timezone is different from locales. Did it also."
 echo ""
 sync
 EOF
+chmod a+x install6localesro-edit.sh
 cd ../../
 ######Directory changing ending
 echo "Files /root/install* have been written."
@@ -908,6 +915,7 @@ cp sdcardforarch/boot/config.txt sdcardforarch/boot/confignew.txt
 sync
 umount $bootpart
 umount $rootpart
+swapoff $swappart
 rm -rf sdcardforarch
 rm -rf archcoredbextract
 # Keeping Arch image
