@@ -550,6 +550,7 @@ mkinitcpio -k \$(uname -r) -g /boot/initrd
 sleep 2
 sync
 sleep 2
+sed -i 's/chromium %U/chromium --no-sandbox --user-data-dir \/var\/cache\/chromiumdir %U/g' /usr/share/applications/chromium.desktop
 # Kodi leaves a blank screen when exiting, this hack fixes that
 mkdir /usr/bin
 mkdir /root/.kodi
@@ -578,6 +579,7 @@ echo '    echo "fi" >> /usr/bin/depmod' >> /usr/bin/kodiexitfixroot
 echo '    echo "exit 0" >> /usr/bin/depmod' >> /usr/bin/kodiexitfixroot
 echo '    chmod a+x /usr/bin/depmod' >> /usr/bin/kodiexitfixroot
 echo 'fi' >> /usr/bin/kodiexitfixroot
+echo "sed -i 's/chromium %U/chromium --no-sandbox --user-data-dir \\\/var\\\/cache\\\/chromiumdir %U/g' /usr/share/applications/chromium.desktop" >> /usr/bin/kodiexitfixroot
 echo "exit 0" >> /usr/bin/kodiexitfixroot
 chmod a+x /usr/bin/kodiexitfixroot
 # Arch uses systemd timers not cron by default
@@ -631,7 +633,6 @@ sleep 5
 sync
 sleep 3
 amixer cset numid=3 -- 90%
-sed -i 's/chromium %U/chromium --no-sandbox --user-data-dir \/var\/cache\/chromiumdir %U/g' /usr/share/applications/chromium.desktop
 ln -s /usr/bin/omxplayer /usr/bin/oi
 mkdir /var/cache/chromiumdir
 chown 777 /var/cache/chromiumdir
@@ -843,7 +844,6 @@ echo ""
 cat sdcardforarch/etc/systemd/system/ppp\@.service.d/ppp.conf
 echo ""
 echo "Configuring man-db.timer and updatedb.timer to start later."
-
 mkdir sdcardforarch/etc/systemd/system/man-db.timer.d
 echo "[Timer]" > sdcardforarch/etc/systemd/system/man-db.timer.d/man-db.timer.conf
 echo "OnCalender=" >> sdcardforarch/etc/systemd/system/man-db.timer.d/man-db.timer.conf
@@ -875,10 +875,10 @@ vm.dirty_background_bytes = 8388608
 vm.dirty_writeback_centisecs = 600
 vm.dirty_expire_centisecs = 600
 # In other words the seven optimizations do this, in their order, each in paranthesis:
-#		(keep caches medium and swap low), (keep a free memory of 8 MB), (keep a
-#		medium amount of file information in cache), (processes write after reaching
-#		8MB in their memory) to a (cache of 8 MB in size), in which (old data is
-#		written every 6 seconds) and (data is considered old after 6 seconds).
+#    (keep caches medium and swap low), (keep a free memory of 8 MB), (keep a
+#    medium amount of file information in cache), (processes write after reaching
+#    8MB in their memory) to a (cache of 8 MB in size), in which (old data is
+#    written every 6 seconds) and (data is considered old after 6 seconds).
 EOF
 echo ""
 echo ""
@@ -904,10 +904,10 @@ mkdir sdcardforarch/etc/X11
 mkdir sdcardforarch/etc/X11/xorg.conf.d
 cat <<EOF > sdcardforarch/etc/X11/xorg.conf.d/50-on-flags.conf
 Section "ServerFlags"
-   Option "BlankTime" "0"
-   Option "StandbyTime" "0"
-   Option "SuspendTime" "0"
-   Option "OffTime" "0"
+    Option "BlankTime" "0"
+    Option "StandbyTime" "0"
+    Option "SuspendTime" "0"
+    Option "OffTime" "0"
 EndSection
 EOF
 cp sdcardforarch/boot/config.txt sdcardforarch/boot/confignew.txt
