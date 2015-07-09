@@ -512,7 +512,7 @@ sleep 2
 # Packages only for the Raspberry Pi or ArchLinuxARM (comment if installing on something else)
 pacman -S --noconfirm --needed libbcm2835 xf86-video-fbturbo-git kodi-rbp omxplayer packer
 # Console packages - fdisk is in util-linux which is in base-devel
-pacman -S --noconfirm --needed base base-devel arch-install-scripts dosfstools libarchive pkgfile iotop gptfdisk parted mkinitcpio upower mc libnewt newt-syrup openssh openssl wiringpi espeak mpg123 flac lame youtube-dl imagemagick git wget libx264 mediainfo
+pacman -S --noconfirm --needed base base-devel arch-install-scripts dosfstools mtools libarchive pkgfile iotop gptfdisk parted mkinitcpio upower mc libnewt newt-syrup openssh openssl wiringpi espeak mpg123 flac lame youtube-dl imagemagick git wget libx264 mediainfo
 sleep 2
 # Sound packages
 pacman -S --noconfirm --needed alsa-utils alsa-plugins pulseaudio pulseaudio-alsa paprefs pavucontrol timidity++ timidity-freepats
