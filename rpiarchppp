@@ -587,8 +587,8 @@ cat <<EOF > /etc/systemd/system/kodiexitfixroot.timer
 [Unit]
 Description=kodiexitfixroot timer
 [Timer]
-# Every 30 seconds
-OnCalendar=*-*-*  *:*:0/30
+# Every 10 seconds
+OnCalendar=*-*-*  *:*:0/10
 Unit=kodiexitfixroot.service
 [Install]
 WantedBy=timers.target
