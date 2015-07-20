@@ -512,19 +512,19 @@ sleep 2
 # Packages only for the Raspberry Pi or ArchLinuxARM (comment if installing on something else)
 pacman -S --noconfirm --needed libbcm2835 xf86-video-fbturbo-git kodi-rbp omxplayer packer
 # Console packages - fdisk is in util-linux which is in base-devel
-pacman -S --noconfirm --needed base base-devel arch-install-scripts dosfstools mtools libarchive pkgfile iotop gptfdisk parted mkinitcpio upower mc libnewt newt-syrup openssh openssl wiringpi espeak mpg123 flac lame youtube-dl imagemagick git wget libx264 mediainfo
+pacman -S --noconfirm --needed base base-devel arch-install-scripts dosfstools mtools libarchive pkgfile iotop gptfdisk parted mkinitcpio upower mc libnewt newt-syrup openssh openssl wiringpi espeak mpg123 flac lame youtube-dl imagemagick git wget libx264 mediainfo ncdu vorbis-tools elinks
 sleep 2
 # Sound packages
 pacman -S --noconfirm --needed alsa-utils alsa-plugins pulseaudio pulseaudio-alsa paprefs pavucontrol timidity++ timidity-freepats
 sleep 2
 # Xorg packages
-pacman -S --noconfirm --needed unrar unzip zip unarj p7zip gzip bzip2 xarchiver mesa-libgl ttf-freefont ttf-dejavu xorg-server xorg-xinit libksane xsane-gimp inkscape phonon-qt4-gstreamer phonon-qt5-gstreamer gparted audacious gimp libreoffice-still jre8-openjdk jdk8-openjdk xsane kactivities4
+pacman -S --noconfirm --needed unrar unzip zip unarj p7zip gzip bzip2 xarchiver mesa-libgl ttf-freefont ttf-dejavu xorg-server xorg-xinit libksane xsane-gimp inkscape phonon-qt4-gstreamer phonon-qt5-gstreamer gparted audacious gimp libreoffice-still jre8-openjdk jdk8-openjdk xsane kactivities4 xorg-xrefresh fltk
 sleep 2
 # Lxde packages
-pacman -S --noconfirm --needed chromium calligra-krita gpicview lxappearance lxappearance-obconf lxde-common lxde-icon-theme lxdm lxinput lxlauncher lxmenu-data lxmusic lxpanel lxrandr lxsession lxtask lxterminal openbox pcmanfm transmission-gtk leafpad mediainfo-gui
+pacman -S --noconfirm --needed chromium firefox calligra-krita gpicview lxappearance lxappearance-obconf lxde-common lxde-icon-theme lxdm lxinput lxlauncher lxmenu-data lxmusic lxpanel lxrandr lxsession lxtask lxterminal openbox pcmanfm transmission-gtk leafpad mediainfo-gui gvfs texlive-bin evince
 sleep 2
 # Game packages
-pacman -S --noconfirm --needed openra kobodeluxe klines
+pacman -S --noconfirm --needed openra kobodeluxe klines fltk-games
 sleep 2
 sync
 sleep 2
@@ -886,6 +886,14 @@ echo "Creating config.txt"; echo ""
 cp sdcardforarch/boot/config.txt sdcardforarch/boot/configold.txt
 cat <<EOF > sdcardforarch/boot/config.txt
 #The other commented options are in config.txt.old
+# Perfect underclock and overclock only corefreq
+# Measure temp with /opt/vc/bin/vcgencmd measure_temp
+arm_freq=800
+over_voltage=0
+core_freq=400
+sdram_freq=400
+force_turbo=1
+avoid_pwm_pll=1
 #Rezolution 1280x1024 @ 60 Hz
 hdmi_group=2
 hdmi_mode=35
