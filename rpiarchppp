@@ -11,6 +11,9 @@ pppusername="userppp"
 ppppassword="passwdppp"
 pppprovider="isp"
 rpiversionnumber=0			# version, not revision:  0 = autodetect, 1 = BCM2835, 2 = BCM2836
+insaneoverclock=0			# Warranty voinding overclock if set to 1. Set to 0 to avoid this.
+                            # Recommended to have active cooling if overclock. I have a fan on top.
+                            # And have a power supply with minimum current of 2A . I have 3A.
 
 # Use a minimum 8 GB card as I also make a swap partition of 512 MB. Down in "Fdisk area".
 
@@ -886,14 +889,22 @@ echo "Creating config.txt"; echo ""
 cp sdcardforarch/boot/config.txt sdcardforarch/boot/configold.txt
 cat <<EOF > sdcardforarch/boot/config.txt
 #The other commented options are in config.txt.old
-# Perfect underclock and overclock only corefreq
-# Measure temp with /opt/vc/bin/vcgencmd measure_temp
-arm_freq=800
+EOF
+# Warranty voinding overclock. Optional.
+if [ $insaneoverclock -eq 1 ]; then
+cat <<EOF >> sdcardforarch/boot/config.txt
+# Warranty voiding overclock for improved (youtube) browsing
+# Measure temp under load with /opt/vc/bin/vcgencmd measure_temp
+# If temperature goes over 60 Celsius need to improove cooling
+arm_freq=1000
 over_voltage=0
-core_freq=400
-sdram_freq=400
+core_freq=500
+sdram_freq=500
 force_turbo=1
 avoid_pwm_pll=1
+EOF
+fi
+cat <<EOF >> sdcardforarch/boot/config.txt
 #Rezolution 1280x1024 @ 60 Hz
 hdmi_group=2
 hdmi_mode=35
