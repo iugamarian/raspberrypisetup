@@ -11,9 +11,13 @@ pppusername="userppp"
 ppppassword="passwdppp"
 pppprovider="isp"
 rpiversionnumber=0			# version, not revision:  0 = autodetect, 1 = BCM2835, 2 = BCM2836
-insaneoverclock=0			# Warranty voinding overclock if set to 1. Set to 0 to avoid this.
-                            # Recommended to have active cooling if overclock. I have a fan on top.
-                            # And have a power supply with minimum current of 2A . I have 3A.
+insaneoverclock=0			# Overclock if set to 1. Set to 0 to avoid this.
+                      # Keep over_voltage to 0 to keep warranty.
+                      # Recommended to have active cooling if overclock. I have a fan on top.
+                      # And have a power supply with minimum current of 2A . I have 3A.
+                      # According to https://www.raspberrypi.org/forums/viewtopic.php?p=176865#p176865
+                      # having an over_voltage of 0 ensures the warranty bit is not set
+                      # (force_turbo || current_limit_override || temp_limit>85) && over_voltage>0
 
 # Use a minimum 8 GB card as I also make a swap partition of 512 MB. Down in "Fdisk area".
 
@@ -890,10 +894,10 @@ cp sdcardforarch/boot/config.txt sdcardforarch/boot/configold.txt
 cat <<EOF > sdcardforarch/boot/config.txt
 #The other commented options are in config.txt.old
 EOF
-# Warranty voinding overclock. Optional.
+# Overclock. Keep over_voltage to 0 to keep warranty. Optional.
 if [ $insaneoverclock -eq 1 ]; then
 cat <<EOF >> sdcardforarch/boot/config.txt
-# Warranty voiding overclock for improved (youtube) browsing
+# Keep over_voltage to 0 to keep warranty.
 # Measure temp under load with /opt/vc/bin/vcgencmd measure_temp
 # If temperature goes over 60 Celsius need to improove cooling
 arm_freq=1000
