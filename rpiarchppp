@@ -900,10 +900,10 @@ cat <<EOF >> sdcardforarch/boot/config.txt
 # Keep over_voltage to 0 to keep warranty.
 # Measure temp under load with /opt/vc/bin/vcgencmd measure_temp
 # If temperature goes over 60 Celsius need to improove cooling
-arm_freq=1000
+arm_freq=900
 over_voltage=0
-core_freq=500
-sdram_freq=500
+core_freq=450
+sdram_freq=450
 force_turbo=1
 avoid_pwm_pll=1
 EOF
