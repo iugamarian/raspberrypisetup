@@ -333,14 +333,14 @@ echo "Downloading Arch image with wget:"
 echo ""
 echo ""
 if [ "$rpiversion" = "armv6h" ]; then
-# The nl mirror is faster
-wget -c http://nl.mirror.archlinuxarm.org/os/ArchLinuxARM-rpi-latest.tar.gz
+# The nl mirror is faster but does not have os/
+wget -c http://de4.mirror.archlinuxarm.org/os/ArchLinuxARM-rpi-latest.tar.gz
 echo "Unpacking Arch image with bsdtar... wait... (armv6h)"
 bsdtar -xpf ArchLinuxARM-rpi-latest.tar.gz -C sdcardforarch
 fi
 if [ "$rpiversion" = "armv7h" ]; then
-# The nl mirror is faster
-wget -c http://nl.mirror.archlinuxarm.org/os/ArchLinuxARM-rpi-2-latest.tar.gz
+# The nl mirror is faster but does not have os/
+wget -c http://de4.mirror.archlinuxarm.org/os/ArchLinuxARM-rpi-2-latest.tar.gz
 echo "Unpacking Arch image with bsdtar... wait... (armv7h)"
 bsdtar -xpf ArchLinuxARM-rpi-2-latest.tar.gz -C sdcardforarch
 fi
