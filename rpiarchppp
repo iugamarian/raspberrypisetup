@@ -1,14 +1,14 @@
 #!/bin/bash
 # Advanced script to install and configure Arch with ppp on indicated sdcardforarch
 # More info and newest @ http://www.github.com/iugamarian/raspberrypisetup
-# Version 1.40 tested and it works
+# Version 1.60 tested and it works
 # Forked from ShorTie	<idiot@dot.com> 
 # Brought to you by iugamarian	<iugamarian@yahoo.com> 
 # Configuration - choose here carefuly 
 
-sdcardforarch=/dev/sdx 			# Before running, lsblk to indicate card here
+sdcardforarch=/dev/sdwhat 			# Before running, lsblk to indicate card here
 pppusername="userppp"
-ppppassword="passwdppp"
+ppppassword="paswordppp"
 pppprovider="isp"
 rpiversionnumber=0			# version, not revision:  0 = autodetect, 1 = BCM2835, 2 = BCM2836
 insaneoverclock=0			# Overclock if set to 1. Set to 0 to avoid this.
@@ -23,6 +23,18 @@ insaneoverclock=0			# Overclock if set to 1. Set to 0 to avoid this.
 
 #********** END Configuration **************************************************************
 
+# Check to see if device is indicated
+if [ `echo $sdcardforarch | grep sdwhat |wc -c` -eq 0 ]; then
+    echo ""
+    echo "The drive to move root to is $sdcardforarch."
+    echo ""
+else
+    lsblk
+    echo ""
+    echo "Specify the drive by editing the beginning of this script."
+    echo ""
+    exit 1
+fi
 # Check to see if running as root
 echo -e "\nChecking for root."
 if [ `id -u` != 0 ]; then
@@ -177,6 +189,7 @@ echo "Found bsdtar."
 else
 neededprograms+="bsdtar "
 fi
+echo ""
 if [ "$neededprograms" = "" ]; then
 echo "All needed programs available."
 else
@@ -192,7 +205,6 @@ echo "Exiting."
 echo ""
 exit 1
 fi
-echo ""
 # Detecting availability of indicated device
 if ! (fdisk -l | grep $sdcardforarch); then
     echo "Can't find ($sdcardforarch). Insert and indicate it."
@@ -200,7 +212,7 @@ if ! (fdisk -l | grep $sdcardforarch); then
     echo ""
     exit 1
 else
-    echo "Found device $sdcardforarch."
+    echo "Found indicated device $sdcardforarch."
     echo ""
 fi
 echo ""
@@ -247,7 +259,6 @@ swapoff "$sdcardforarch"p7
 swapoff "$sdcardforarch"p8
 swapoff "$sdcardforarch"p9
 echo ""
-echo "Wait..."
 sleep 5
 echo ""
 echo "Deleting MBR and fat allocation table general area with dd:"
@@ -329,22 +340,26 @@ echo ""
 echo "=================================================="
 echo ""
 sleep 2
+sync
+sleep 2
 echo "Downloading Arch image with wget:"
 echo ""
 echo ""
 if [ "$rpiversion" = "armv6h" ]; then
 # The nl mirror is faster but does not have os/
 wget -c http://de4.mirror.archlinuxarm.org/os/ArchLinuxARM-rpi-latest.tar.gz
-echo "Unpacking Arch image with bsdtar... wait... (armv6h)"
+echo "Unpacking Arch image into the root partition with bsdtar... wait... (armv6h)"
 bsdtar -xpf ArchLinuxARM-rpi-latest.tar.gz -C sdcardforarch
 fi
 if [ "$rpiversion" = "armv7h" ]; then
 # The nl mirror is faster but does not have os/
 wget -c http://de4.mirror.archlinuxarm.org/os/ArchLinuxARM-rpi-2-latest.tar.gz
-echo "Unpacking Arch image with bsdtar... wait... (armv7h)"
+echo "Unpacking Arch image into the root partition with bsdtar... wait... (armv7h)"
 bsdtar -xpf ArchLinuxARM-rpi-2-latest.tar.gz -C sdcardforarch
 fi
+sleep 2
 sync
+sleep 2
 echo ""
 echo "Detecting exact names for ppp package and it's dependencies:"
 echo ""
@@ -387,6 +402,7 @@ cat <<EOF >> install1ppp.sh
 echo ""
 echo "Installing ppp..."
 echo ""
+sleep 2
 sync
 sleep 2
 pacman -U --noconfirm --needed $namelibnl-$rpiversion.pkg.tar.xz
@@ -397,7 +413,7 @@ ln -s /etc/ppp/peers/$pppprovider /etc/ppp/peers/provider
 sleep 1
 cp /etc/ppp/pap-secrets.pacorig /etc/ppp/pap-secrets
 cp /etc/ppp/chap-secrets.pacorig /etc/ppp/chap-secrets
-sleep 1
+sleep 2
 sync
 sleep 2
 echo ""
@@ -409,16 +425,18 @@ sleep 1
 systemctl daemon-reload
 sleep 5
 sync
-sleep 5
+sleep 2
 systemctl stop systemd-networkd
 systemctl disable systemd-networkd
 systemctl stop systemd-timesyncd
 systemctl disable systemd-timesyncd
 systemctl stop ppp@$pppprovider.service
 systemctl disable ppp@$pppprovider.service
+sleep 5
+sync
 sleep 2
 systemctl daemon-reload
-sleep 3
+sleep 5
 sync
 sleep 2
 systemctl enable systemd-networkd
@@ -431,19 +449,20 @@ sleep 5
 sync
 sleep 2
 systemctl daemon-reload
-sleep 3
+sleep 5
 sync
+sleep 2
 poff -a
 sleep 2
 systemctl daemon-reload
-sleep 3
+sleep 5
 sync
 sleep 2
 systemctl stop ppp@$pppprovider.service
 systemctl disable ppp@$pppprovider.service
 sleep 2
 systemctl daemon-reload
-sleep 3
+sleep 5
 sync
 sleep 2
 systemctl enable ppp@$pppprovider.service
@@ -456,7 +475,9 @@ sleep 3
 sync
 sleep 2
 systemctl daemon-reload
-sleep 3
+sleep 5
+sync
+sleep 2
 echo ""
 echo "Completed installing ppp."
 echo ""
@@ -471,8 +492,13 @@ echo ""
 systemctl status ppp@$pppprovider.service
 sleep 2
 systemctl daemon-reload
-sleep 3
+sleep 5
 sync
+sleep 2
+systemctl daemon-reload
+sleep 5
+sync
+sleep 2
 echo ""
 echo "If warning is in the middle then incorrect configuration of user and password."
 echo ""
@@ -499,44 +525,24 @@ echo ""
 echo "Rebooting so that all upgrades run in the memory too."
 echo ""
 sync
-sleep 3
+sleep 2
 sync
-sleep 3
+sleep 8
 reboot
 EOF
 chmod a+x install2upgrade.sh
 # ... for #!/bin/bash if I put "" gives me an error because of the !
-echo '#!/bin/bash' > install3lxde.sh
-# Having cat with EOF inside, it is needed to use something else like EOG
-cat <<EOG >> install3lxde.sh
+echo '#!/bin/bash' > install3console.sh
+cat <<EOF >> install3console.sh
 echo ""
-echo "Installing lxde..."
-echo ""
-sleep 2
 # Making sure package lists are up to date right now
 pacman -Syu --noconfirm
 sleep 2
 # Packages only for the Raspberry Pi or ArchLinuxARM (comment if installing on something else)
 pacman -S --noconfirm --needed libbcm2835 xf86-video-fbturbo-git kodi-rbp omxplayer packer
 # Console packages - fdisk is in util-linux which is in base-devel
-pacman -S --noconfirm --needed base base-devel arch-install-scripts dosfstools ddrescue mtools libarchive pkgfile iotop gptfdisk parted mkinitcpio upower mc libnewt newt-syrup openssh openssl wiringpi espeak mpg123 flac lame youtube-dl imagemagick git wget libx264 mediainfo ncdu vorbis-tools elinks
+pacman -S --noconfirm --needed base base-devel arch-install-scripts dosfstools ddrescue mtools libarchive pkgfile iotop gptfdisk parted mkinitcpio mkinitcpio-busybox upower mc libnewt newt-syrup openssh openssl wiringpi espeak mpg123 flac lame youtube-dl imagemagick git wget libx264 mediainfo ncdu vorbis-tools elinks
 sleep 2
-# Sound packages
-pacman -S --noconfirm --needed alsa-utils alsa-plugins pulseaudio pulseaudio-alsa paprefs pavucontrol timidity++ timidity-freepats
-sleep 2
-# Xorg packages
-pacman -S --noconfirm --needed unrar unzip zip unarj p7zip gzip bzip2 xarchiver mesa-libgl ttf-freefont ttf-dejavu xorg-server xorg-xinit libksane xsane-gimp inkscape phonon-qt4-gstreamer phonon-qt5-gstreamer gparted audacious gimp libreoffice-still jre8-openjdk jdk8-openjdk xsane kactivities4 xorg-xrefresh fltk
-sleep 2
-# Lxde packages
-pacman -S --noconfirm --needed chromium firefox calligra-krita gpicview lxappearance lxappearance-obconf lxde-common lxde-icon-theme lxdm lxinput lxlauncher lxmenu-data lxmusic lxpanel lxrandr lxsession lxtask lxterminal openbox pcmanfm transmission-gtk leafpad mediainfo-gui gvfs texlive-bin evince
-sleep 2
-# Game packages
-pacman -S --noconfirm --needed openra kobodeluxe klines fltk-games
-sleep 2
-sync
-sleep 2
-echo "exec startlxde" > /root/.xinitrc
-echo ""
 echo "Configuring boot and /etc/fstab to use UUID for partitions."
 echo ""
 # The UUID is determined in rpiarchppp as sed can't execute or show variable
@@ -548,6 +554,7 @@ echo ""
 echo "Making an initramfs giving the kernel the ability to boot by UUID."
 echo ""
 echo "This is done automatically for every kernel update."
+echo ""
 sed -i 's/ block / /g' /etc/mkinitcpio.conf
 sed -i 's/udev/udev block/g' /etc/mkinitcpio.conf
 sleep 2
@@ -557,102 +564,33 @@ mkinitcpio -k \$(uname -r) -g /boot/initrd
 sleep 2
 sync
 sleep 2
-sed -i 's/chromium %U/chromium --no-sandbox --user-data-dir \/var\/cache\/chromiumdir %U/g' /usr/share/applications/chromium.desktop
-# Kodi leaves a blank screen when exiting, this hack fixes that
-mkdir /usr/bin
-mkdir /root/.kodi
-mkdir /root/.kodi/temp/
-echo '#!/bin/bash' > /usr/bin/kodiexitfixroot
-echo '' >>  /usr/bin/kodiexitfixroot
-echo "if [[ \\\$(tail -1 /root/.kodi/temp/kodi.log | grep \"application stopped...\") ]]; then" >> /usr/bin/kodiexitfixroot
-echo '    killall kodi.bin' >> /usr/bin/kodiexitfixroot
-echo '    mv /root/.kodi/temp/kodi.log /root/.kodi/temp/kodi.old.log' >> /usr/bin/kodiexitfixroot
-echo '    sleep 1 && chvt 2 && sleep 1 && chvt 1' >> /usr/bin/kodiexitfixroot
-echo 'fi' >> /usr/bin/kodiexitfixroot
-# check depmod is not replaced and repair it again if it has
-echo 'if [[ \`cat /usr/bin/depmod |grep "mkinitcpio" |wc -c\` = 0 ]]; then' >> /usr/bin/kodiexitfixroot
-# in case replacing is still in progress
-echo '    sleep 2' >> /usr/bin/kodiexitfixroot
-echo '    rename depmod depmodbin /usr/bin/depmod' >> /usr/bin/kodiexitfixroot
-echo "    echo '#!/bin/bash' > /usr/bin/depmod" >> /usr/bin/kodiexitfixroot
-# checking if more parameters or not, when one, for sure it's kernel version, when more, depmodbin alone
-echo "    echo 'if [[ \\\`echo \\\$2 |wc -c\\\` != 1 ]]; then' >> /usr/bin/depmod" >> /usr/bin/kodiexitfixroot
-echo '    echo "    depmodbin \\\$1 \\\$2 \\\$3 \\\$4 \\\$5 \\\$6 \\\$7 \\\$8 \\\$9" >> /usr/bin/depmod' >> /usr/bin/kodiexitfixroot
-echo '    echo "else" >> /usr/bin/depmod' >> /usr/bin/kodiexitfixroot
-# Indicating new version instead of current version
-echo '    echo "    depmodbin \\\$1" >> /usr/bin/depmod' >> /usr/bin/kodiexitfixroot
-echo '    echo "    mkinitcpio -k \\\$1 -g /boot/initrd" >> /usr/bin/depmod' >> /usr/bin/kodiexitfixroot
-echo '    echo "fi" >> /usr/bin/depmod' >> /usr/bin/kodiexitfixroot
-echo '    echo "exit 0" >> /usr/bin/depmod' >> /usr/bin/kodiexitfixroot
-echo '    chmod a+x /usr/bin/depmod' >> /usr/bin/kodiexitfixroot
-echo 'fi' >> /usr/bin/kodiexitfixroot
-echo "sed -i 's/chromium %U/chromium --no-sandbox --user-data-dir \\\/var\\\/cache\\\/chromiumdir %U/g' /usr/share/applications/chromium.desktop" >> /usr/bin/kodiexitfixroot
-echo "exit 0" >> /usr/bin/kodiexitfixroot
-chmod a+x /usr/bin/kodiexitfixroot
-# Arch uses systemd timers not cron by default
-cat <<EOF > /etc/systemd/system/kodiexitfixroot.timer
-[Unit]
-Description=kodiexitfixroot timer
-[Timer]
-# Every 10 seconds
-OnCalendar=*-*-*  *:*:0/10
-Unit=kodiexitfixroot.service
-[Install]
-WantedBy=timers.target
-EOF
-cat <<EOF > /etc/systemd/system/kodiexitfixroot.service 
-[Unit]
-Description=kodiexitfixroot service
-[Service]
-Type=oneshot
-ExecStart=/bin/bash /usr/bin/kodiexitfixroot
-EOF
-sleep 1
-systemctl daemon-reload
-sleep 3
-systemctl enable kodiexitfixroot.timer
-systemctl start kodiexitfixroot.timer
-sleep 2
-sync
-sleep 2
 # Hack to allow mc to open videos with omxplayer
 cp /usr/lib/mc/ext.d/video.sh /usr/lib/mc/ext.d/video.sh.old
 echo '#!/bin/sh' > /usr/lib/mc/ext.d/video.sh
 echo "omxplayer \"\\\${MC_EXT_FILENAME}\"" >> /usr/lib/mc/ext.d/video.sh
-pkgfile --update
-sleep 2
-sed -i 's/load-module module-suspend-on-idle/#load-module module-suspend-on-idle/g' /etc/pulse/default.pa
-sed -i 's/load-module module-suspend-on-idle/#load-module module-suspend-on-idle/g' /etc/pulse/system.pa
-echo "flat-volumes = no" >> /etc/pulse/daemon.conf
-echo "high-priority = no" >> /etc/pulse/daemon.conf
-echo "nice-level = -1" >> /etc/pulse/daemon.conf
-echo "no-cpu-limit = yes" >> /etc/pulse/daemon.conf
-sleep 3
-systemctl daemon-reload
-sleep 5
-sync
-sleep 3
-systemctl --user enable pulseaudio.service
-systemctl --user start pulseaudio.service
-sleep 3
-systemctl daemon-reload
-sleep 5
-sync
-sleep 3
-amixer cset numid=3 -- 90%
-ln -s /usr/bin/omxplayer /usr/bin/oi
-mkdir /var/cache/chromiumdir
-chown 777 /var/cache/chromiumdir
-sleep 1
-echo ""
-echo "Added symbolic links oi and yt to omxplayer and youtube-dl."
 echo ""
 echo "Added mc option to open all videos with omxplayer."
 echo ""
+pkgfile --update
+sleep 2
+# Omxplayer available as oi for all users
+ln -s /usr/bin/omxplayer /usr/bin/oi
+# Root aliases, used only by root
+cp /root/.bash_profile /root/.bash_profile.old
+echo "[[ -f ~/.bashrc ]] && . ~/.bashrc" > /root/.bash_profile
+echo 'alias pk="TMPDIR=/root/tmp/pkgs/ EDITOR=nano packer"' >> /root/.bashrc
+echo 'alias yt="youtube-dl -f mp4/best"' >> /root/.bashrc
+. ~/.bashrc
+echo ""
+echo "Added link oi -> omxplayer and root aliases yt -> youtube-dl and pk -> packer."
+echo ""
+echo "Rebooting to have initrd loaded."
 sleep 2
 sync
-EOG
-chmod a+x install3lxde.sh
+sleep 8
+reboot
+EOF
+chmod a+x install3console.sh
 echo '#!/bin/bash' > install4autologinroot.sh
 cat <<EOF >> install4autologinroot.sh
 echo ""
@@ -715,19 +653,371 @@ echo "Use the alias packer in .bashrc."
 echo ""
 sleep 2
 sync
+sleep 2
 EOF
 chmod a+x install4autologinroot.sh
-echo '#!/bin/bash' > install5autostartxroot.sh
-cat <<EOF >> install5autostartxroot.sh
+# ... for #!/bin/bash if I put "" gives me an error because of the !
+echo '#!/bin/bash' > install5moverootusb.sh
+cat <<EOF >> install5moverootusb.sh
+drivetomoverootto=/dev/sdwhat
+echo ""
+echo ""
+echo "After running install3console.sh, the kernel is able to boot by UUID."
+echo ""
+echo "Arch needs to update hundreds of megabytes of packages every week."
+echo ""
+echo "As sdcard is very slow, each update lasts a very long time."
+echo ""
+echo "A solution is to move the / (root) partition to an external usb drive."
+echo ""
+echo "External rotating harddisk or ssd hardisk is faster than a usb stick."
+echo ""
+if [ \`echo \$drivetomoverootto | grep sdwhat |wc -c\` -eq 0 ]; then
+    echo "The drive to move root to is \$drivetomoverootto."
+else
+    lsblk
+    echo ""
+    echo "Specify the drive by editing the beginning of this script."
+    echo ""
+    exit 1
+fi
+echo ""
+echo "If you want to keep / (root) on sdcard, stop this script with (ctrl + c)"
+echo ""
+echo "DON'T WANT \$drivetomoverootto TO BE DESTROYED NOW, stop this script with (ctrl + c)"
+echo ""
+sleep 3
+echo "10"
+sleep 1
+echo "9"
+sleep 1
+echo "8"
+sleep 1
+echo "7"
+sleep 1
+echo "6"
+sleep 1
+echo ""
+echo "DON'T WANT \$drivetomoverootto TO BE DESTROYED NOW, stop this script with (ctrl + c)"
+echo ""
+echo "5"
+sleep 1
+echo "4"
+sleep 1
+echo "3"
+sleep 1
+echo "2"
+sleep 1
+echo "1"
+sleep 2
+echo "Too late..."
+echo ""
+sleep 2
+sync
+sleep 2
+# Detecting availability of indicated device to move root to
+if ! (fdisk -l | grep \$drivetomoverootto); then
+    echo "Can't find (\$drivetomoverootto). Insert and indicate it."
+    echo "No files. Only devices. Exiting."
+    echo ""
+    exit 1
+else
+    echo "Found device \$drivetomoverootto."
+    echo ""
+fi
+echo ""
+echo "============================================================"
+echo ""
+umount newrootforarch
+rm -rf newrootforarch
+sleep 2
+sync
+sleep 2
+# Safety unmounting of possible partitions, logicals can start from 5
+echo "Unmounting partitions, up to 9, with or without p in front:"
+echo ""
+umount "\$drivetomoverootto"1
+umount "\$drivetomoverootto"2
+umount "\$drivetomoverootto"3
+umount "\$drivetomoverootto"4
+umount "\$drivetomoverootto"5
+umount "\$drivetomoverootto"6
+umount "\$drivetomoverootto"7
+umount "\$drivetomoverootto"8
+umount "\$drivetomoverootto"9
+umount "\$drivetomoverootto"p1
+umount "\$drivetomoverootto"p2
+umount "\$drivetomoverootto"p3
+umount "\$drivetomoverootto"p4
+umount "\$drivetomoverootto"p5
+umount "\$drivetomoverootto"p6
+umount "\$drivetomoverootto"p7
+umount "\$drivetomoverootto"p8
+umount "\$drivetomoverootto"p9
+swapoff "\$drivetomoverootto"1
+swapoff "\$drivetomoverootto"2
+swapoff "\$drivetomoverootto"3
+swapoff "\$drivetomoverootto"4
+swapoff "\$drivetomoverootto"5
+swapoff "\$drivetomoverootto"6
+swapoff "\$drivetomoverootto"7
+swapoff "\$drivetomoverootto"8
+swapoff "\$drivetomoverootto"9
+swapoff "\$drivetomoverootto"p1
+swapoff "\$drivetomoverootto"p2
+swapoff "\$drivetomoverootto"p3
+swapoff "\$drivetomoverootto"p4
+swapoff "\$drivetomoverootto"p5
+swapoff "\$drivetomoverootto"p6
+swapoff "\$drivetomoverootto"p7
+swapoff "\$drivetomoverootto"p8
+swapoff "\$drivetomoverootto"p9
+echo ""
+sleep 3
+echo ""
+echo "Deleting MBR and fat allocation table general area with dd:"
+# Need to dd more because fat filesystems may get confused about random
+# data in their first part where they store the fat allocation table
+dd if=/dev/zero of=\$drivetomoverootto bs=1M count=32 iflag=fullblock
+echo ""
+echo ""
+echo "Partitioning indicated device to move root to:"
+echo ""
+# On fdisk older than 25, setting bootable flag adds 1 after a: "a,1" < 25, "a" >= 25
+# But I follow the archlinuxarm instructions which don't set booteble flag
+# "Fdisk area". Be careful about the new lines (Enter).
+fdisk \$drivetomoverootto <<EOG
+o
+n
+
+
+
++2048M
+n
+
+
+
+
+w
+EOG
+# Finished partitioning. Be careful about the new lines (Enter).
+sleep 5
+echo ""
+echo "=================================================="
+echo ""
+echo ""
+echo "Detecting if the device is seen as a mmcblk so that partitions have a p in front"
+echo ""
+if [ \`echo \$drivetomoverootto | grep mmcblk |wc -c\` != 0 ]; then
+echo ""
+echo "Partition numbers have a p in front of them..."
+moveswapto="\$drivetomoverootto"p1
+moverootto="\$drivetomoverootto"p2
+else
+echo ""
+echo "Partition numbers don't have a p in front of them..."
+moveswapto="\$drivetomoverootto"1
+moverootto="\$drivetomoverootto"2
+fi
+echo ""
+echo -n "New swap partition is:"
+echo \$moveswapto
+echo ""
+echo -n "New root partition is:"
+echo \$moverootto
+echo ""
+echo ""
+echo "Formatting partitions:"
+echo ""
+mkswap \$moveswapto
+# Disabling lazy options so that all inodes get written now not bit by bit later.
+mke2fs -t ext4 -m 0 -F -L ARCHRPIROOT -E lazy_itable_init=0,lazy_journal_init=0 \$moverootto
+echo ""
+echo "Mounting partitions:"
+echo ""
+mkdir newrootforarch
+mount \$moverootto newrootforarch
+echo ""
+echo "=================================================="
+echo ""
+sleep 2
+echo ""
+echo "Copying root to new location, wait..."
+echo ""
+sync
+sleep 2
+sync
+sleep 2
+cp -ax / newrootforarch
+sync
+sleep 2
+sync
+sleep 2
+# /boot in new root needs to be empty, as it is a mount point
+rm -rf newrootforarch/boot/*
+# Configuring /etc/fstab in new root
+cp /boot/cmdline.txt /boot/cmdline.oldroot
+echo "sed -i 's/UUID=\`blkid -s UUID -o value \/dev\/mmcblk0p2\`/UUID=\`blkid -s UUID -o value $moveswapto\`/g' newrootforarch/etc/fstab" > sedtempfilefstabconf.sh
+echo "sed -i 's/UUID=\`blkid -s UUID -o value \/dev\/mmcblk0p3\`/UUID=\`blkid -s UUID -o value $moverootto\`/g' /boot/cmdline.txt" >> sedtempfilefstabconf.sh
+echo "sed -i 's/UUID=\`blkid -s UUID -o value \/dev\/mmcblk0p3\`/UUID=\`blkid -s UUID -o value $moverootto\`/g' newrootforarch/etc/fstab" >> sedtempfilefstabconf.sh
+echo ""
+sleep 2
+sync
+sleep 2
+sh sedtempfilefstabconf.sh
+echo ""
+sync
+sleep 2
+echo "Backup of /boot for this moment in time, the kernel"
+echo ""
+echo "modules in this old root are for the same version."
+echo ""
+mkdir /oldboot
+mkdir newrootforarch/oldboot
+cp -r /boot/* /oldboot
+cp -r /boot/* newrootforarch/oldboot
+sleep 2
+sync
+sleep 2
+umount newrootforarch
+rm -rf newrootforarch
+rm sedtempfilefstabconf.sh
+sleep 2
+sync
+sleep 2
+echo ""
+echo "Restore old boot (old root becomes stable) with:"
+echo "rm -rf /boot/* && cp -r -v /oldboot/* /boot"
+echo ""
+echo "Restore old root (unstable after kernel update) with:"
+echo ""
+echo "cp /boot/cmdline.oldroot /boot/cmdline.txt"
+sleep 2
+echo ""
+echo "Rebooting so that the new usb root will be online."
+echo ""
+sleep 2
+sync
+sleep 8
+EOF
+chmod a+x install5moverootusb.sh
+# ... for #!/bin/bash if I put "" gives me an error because of the !
+echo '#!/bin/bash' > install6lxde.sh
+# Having cat with EOF inside, it is needed to use something else like EOG
+cat <<EOF >> install6lxde.sh
+echo ""
+echo "Installing lxde..."
+echo ""
+sleep 2
+# Making sure package lists are up to date right now
+pacman -Syu --noconfirm
+sleep 2
+# Sound packages
+pacman -S --noconfirm --needed alsa-utils alsa-plugins pulseaudio pulseaudio-alsa paprefs pavucontrol timidity++ timidity-freepats
+sleep 2
+# Xorg packages
+pacman -S --noconfirm --needed unrar unzip zip unarj p7zip gzip bzip2 xarchiver mesa-libgl ttf-freefont ttf-dejavu xorg-server xorg-xinit libksane xsane-gimp inkscape phonon-qt4-gstreamer phonon-qt5-gstreamer gparted audacious gimp libreoffice-still jre8-openjdk jdk8-openjdk xsane kactivities4 xorg-xrefresh fltk
+sleep 2
+# Lxde packages
+pacman -S --noconfirm --needed chromium firefox calligra-krita gpicview lxappearance lxappearance-obconf lxde-common lxde-icon-theme lxdm lxinput lxlauncher lxmenu-data lxmusic lxpanel lxrandr lxsession lxtask lxterminal openbox pcmanfm transmission-gtk leafpad mediainfo-gui gvfs texlive-bin evince
+sleep 2
+# Game packages
+pacman -S --noconfirm --needed openra kobodeluxe klines fltk-games
+sleep 2
+sync
+sleep 2
+echo "exec startlxde" > /root/.xinitrc
+echo ""
+sed -i 's/chromium %U/chromium --no-sandbox --user-data-dir \/var\/cache\/chromiumdir %U/g' /usr/share/applications/chromium.desktop
+# Kodi leaves a blank screen when exiting, this hack fixes that
+mkdir /usr/bin
+mkdir /root/.kodi
+mkdir /root/.kodi/temp/
+echo '#!/bin/bash' > /usr/bin/kodiexitfixroot
+echo '' >>  /usr/bin/kodiexitfixroot
+echo "if [[ \\\$(tail -1 /root/.kodi/temp/kodi.log | grep \"application stopped...\") ]]; then" >> /usr/bin/kodiexitfixroot
+echo '    killall kodi.bin' >> /usr/bin/kodiexitfixroot
+echo '    mv /root/.kodi/temp/kodi.log /root/.kodi/temp/kodi.old.log' >> /usr/bin/kodiexitfixroot
+echo '    sleep 1 && chvt 2 && sleep 1 && chvt 1' >> /usr/bin/kodiexitfixroot
+echo 'fi' >> /usr/bin/kodiexitfixroot
+# check depmod is not replaced and repair it again if it has
+echo 'if [[ \`cat /usr/bin/depmod |grep "mkinitcpio" |wc -c\` = 0 ]]; then' >> /usr/bin/kodiexitfixroot
+# in case replacing is still in progress
+echo '    sleep 2' >> /usr/bin/kodiexitfixroot
+echo '    rename depmod depmodbin /usr/bin/depmod' >> /usr/bin/kodiexitfixroot
+echo "    echo '#!/bin/bash' > /usr/bin/depmod" >> /usr/bin/kodiexitfixroot
+# checking if more parameters or not, when one, for sure it's kernel version, when more, depmodbin alone
+echo "    echo 'if [[ \\\`echo \\\$2 |wc -c\\\` != 1 ]]; then' >> /usr/bin/depmod" >> /usr/bin/kodiexitfixroot
+echo '    echo "    depmodbin \\\$1 \\\$2 \\\$3 \\\$4 \\\$5 \\\$6 \\\$7 \\\$8 \\\$9" >> /usr/bin/depmod' >> /usr/bin/kodiexitfixroot
+echo '    echo "else" >> /usr/bin/depmod' >> /usr/bin/kodiexitfixroot
+# Indicating new version instead of current version
+echo '    echo "    depmodbin \\\$1" >> /usr/bin/depmod' >> /usr/bin/kodiexitfixroot
+echo '    echo "    mkinitcpio -k \\\$1 -g /boot/initrd" >> /usr/bin/depmod' >> /usr/bin/kodiexitfixroot
+echo '    echo "fi" >> /usr/bin/depmod' >> /usr/bin/kodiexitfixroot
+echo '    echo "exit 0" >> /usr/bin/depmod' >> /usr/bin/kodiexitfixroot
+echo '    chmod a+x /usr/bin/depmod' >> /usr/bin/kodiexitfixroot
+echo 'fi' >> /usr/bin/kodiexitfixroot
+echo "sed -i 's/chromium %U/chromium --no-sandbox --user-data-dir \\\/var\\\/cache\\\/chromiumdir %U/g' /usr/share/applications/chromium.desktop" >> /usr/bin/kodiexitfixroot
+echo "exit 0" >> /usr/bin/kodiexitfixroot
+chmod a+x /usr/bin/kodiexitfixroot
+# Arch uses systemd timers not cron by default
+cat <<EOG > /etc/systemd/system/kodiexitfixroot.timer
+[Unit]
+Description=kodiexitfixroot timer
+[Timer]
+# Every 10 seconds
+OnCalendar=*-*-*  *:*:0/10
+Unit=kodiexitfixroot.service
+[Install]
+WantedBy=timers.target
+EOG
+cat <<EOG > /etc/systemd/system/kodiexitfixroot.service 
+[Unit]
+Description=kodiexitfixroot service
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /usr/bin/kodiexitfixroot
+EOG
+sleep 1
+systemctl daemon-reload
+sleep 3
+systemctl enable kodiexitfixroot.timer
+systemctl start kodiexitfixroot.timer
+sleep 2
+sync
+sleep 2
+sed -i 's/load-module module-suspend-on-idle/#load-module module-suspend-on-idle/g' /etc/pulse/default.pa
+sed -i 's/load-module module-suspend-on-idle/#load-module module-suspend-on-idle/g' /etc/pulse/system.pa
+echo "flat-volumes = no" >> /etc/pulse/daemon.conf
+echo "high-priority = no" >> /etc/pulse/daemon.conf
+echo "nice-level = -1" >> /etc/pulse/daemon.conf
+echo "no-cpu-limit = yes" >> /etc/pulse/daemon.conf
+sleep 3
+systemctl daemon-reload
+sleep 5
+sync
+sleep 3
+systemctl --user enable pulseaudio.service
+systemctl --user start pulseaudio.service
+sleep 3
+systemctl daemon-reload
+sleep 5
+sync
+sleep 3
+amixer cset numid=3 -- 90%
+mkdir /var/cache/chromiumdir
+chown 777 /var/cache/chromiumdir
+sleep 2
+sync
+sleep 2
+EOF
+chmod a+x install6lxde.sh
+echo '#!/bin/bash' > install7autostartxroot.sh
+cat <<EOF >> install7autostartxroot.sh
 echo ""
 echo "Activating auto startx at root login..."
 echo ""
-cp /root/.bash_profile /root/.bash_profile.old
-echo "[[ -f ~/.bashrc ]] && . ~/.bashrc" > /root/.bash_profile
 echo "[[ -z \\\$DISPLAY && \\\$XDG_VTNR -eq 1 ]] && exec startx" >> /root/.bash_profile
-echo 'alias pk="TMPDIR=/root/tmp/pkgs/ EDITOR=nano packer"' >> /root/.bashrc
-echo 'alias yt="youtube-dl -f mp4/best"' >> /root/.bashrc
-. ~/.bashrc
 sleep 1
 echo ""
 echo "Inserted startx in .bash_profile, original file copied to .bash_profile.old"
@@ -738,10 +1028,11 @@ echo "Don't run this script again on this install or you lose .bash_profile.old"
 echo ""
 sleep 2
 sync
+sleep 2
 EOF
-chmod a+x install5autostartxroot.sh
-echo '#!/bin/bash' > install6localesro-edit.sh
-cat <<EOF >> install6localesro-edit.sh
+chmod a+x install7autostartxroot.sh
+echo '#!/bin/bash' > install8localesro-edit.sh
+cat <<EOF >> install8localesro-edit.sh
 echo ""
 echo "Activating locales for Romania..."
 echo ""
@@ -770,9 +1061,11 @@ echo "View the locale and keymap with list-locales, list-keymaps."
 echo ""
 echo "Setting timezone is different from locales. Did it also."
 echo ""
+sleep 2
 sync
+sleep 2
 EOF
-chmod a+x install6localesro-edit.sh
+chmod a+x install8localesro-edit.sh
 cd ../../
 ######Directory changing ending
 echo "Files /root/install* have been written."
@@ -781,6 +1074,7 @@ echo ""
 echo "=================================================="
 echo ""
 echo ""
+sleep 2
 sync
 sleep 2
 # Root is on partition 3 not 2, informing cmdline.txt and fstab
@@ -935,7 +1229,9 @@ EndSection
 EOF
 cp sdcardforarch/boot/config.txt sdcardforarch/boot/confignew.txt
 ### When config.txt is lost, cp /boot/confignew.txt config.txt
+sleep 2
 sync
+sleep 2
 umount $bootpart
 umount $rootpart
 swapoff $swappart
@@ -943,13 +1239,16 @@ rm -rf sdcardforarch
 rm -rf archcoredbextract
 # Keeping Arch image
 rm core.db.tar.gz
+sleep 2
 sync
+sleep 2
 echo "Completed."
 echo ""
 end_time=$(date)
 echo "Started at:"
 echo ""
 echo $start_time
+echo ""
 echo "Finished at:"
 echo ""
 echo $end_time
@@ -958,4 +1257,7 @@ echo "Password for root is root. Without the dot."
 echo ""
 echo "Exiting happy."
 echo ""
+sleep 2
+sync
+sleep 2
 exit 0
