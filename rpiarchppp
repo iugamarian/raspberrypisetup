@@ -1138,9 +1138,9 @@ echo "Conf file to start network in systemd before pppd:"
 echo "Actual file: /etc/systemd/system/ppp@.service.d/ppp.conf"
 mkdir sdcardforarch/etc/systemd/system/ppp\@.service.d
 echo "[Service]" > sdcardforarch/etc/systemd/system/ppp\@.service.d/ppp.conf
-echo "ExecStartPre=/bin/bash /usr/bin/poff -a" >> sdcardforarch/etc/systemd/system/ppp\@.service.d/ppp.conf
-echo "ExecStartPre=/usr/bin/ip link set eth0 down" >> sdcardforarch/etc/systemd/system/ppp\@.service.d/ppp.conf
-echo "ExecStartPre=ExecStartPre=/usr/bin/sleep 3" >> sdcardforarch/etc/systemd/system/ppp\@.service.d/ppp.conf
+#echo "ExecStartPre=/bin/bash /usr/bin/poff -a" >> sdcardforarch/etc/systemd/system/ppp\@.service.d/ppp.conf
+#echo "ExecStartPre=/usr/bin/ip link set eth0 down" >> sdcardforarch/etc/systemd/system/ppp\@.service.d/ppp.conf
+#echo "ExecStartPre=ExecStartPre=/usr/bin/sleep 3" >> sdcardforarch/etc/systemd/system/ppp\@.service.d/ppp.conf
 echo "ExecStartPre=/usr/bin/ip link set eth0 up" >> sdcardforarch/etc/systemd/system/ppp\@.service.d/ppp.conf
 echo ""
 echo "File /etc/systemd/system/ppp\@.service.d/ppp.conf is as follows:"
