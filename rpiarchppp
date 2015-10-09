@@ -432,6 +432,10 @@ systemctl stop systemd-timesyncd
 systemctl disable systemd-timesyncd
 systemctl stop ppp@$pppprovider.service
 systemctl disable ppp@$pppprovider.service
+systemctl stop setmtu@lo.service
+systemctl disable setmtu@lo.service
+systemctl stop setmtu@eth0.service
+systemctl disable setmtu@eth0.service
 sleep 5
 sync
 sleep 2
@@ -443,6 +447,10 @@ systemctl enable systemd-networkd
 systemctl start systemd-networkd
 systemctl enable systemd-timesyncd
 systemctl start systemd-timesyncd
+systemctl enable setmtu@lo.service
+systemctl start setmtu@lo.service
+systemctl enable setmtu@eth0.service
+systemctl start setmtu@eth0.service
 systemctl enable ppp@$pppprovider.service
 systemctl start ppp@$pppprovider.service
 sleep 5
@@ -1231,6 +1239,27 @@ Section "ServerFlags"
     Option "SuspendTime" "0"
     Option "OffTime" "0"
 EndSection
+EOF
+mkdir /etc/systemd
+mkdir /etc/systemd/system
+cat <<EOF > /etc/systemd/system/setmtu@.service
+[Unit]
+Description=Set mtu on device
+Before=network.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/conf.d/setmtu
+ExecStart=/usr/bin/ip link set dev %i up mtu ${%i}
+
+[Install]
+WantedBy=multi-user.target
+EOF
+mkdir /etc/conf.d
+cat <<EOF > /etc/conf.d/setmtu
+lo=1452
+eth0=1452
+eth1=1452
 EOF
 cp sdcardforarch/boot/config.txt sdcardforarch/boot/confignew.txt
 ### When config.txt is lost, cp /boot/confignew.txt config.txt
