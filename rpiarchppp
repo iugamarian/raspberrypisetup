@@ -1171,18 +1171,20 @@ echo "Conf file to improove disk performance:"
 echo "/etc/sysctl.d/30-rpi-optimizations.conf"
 echo ""
 cat <<EOF > sdcardforarch/etc/sysctl.d/30-rpi-optimizations.conf
-vm.swappiness = 10
-vm.min_free_kbytes = 8192
+vm.swappiness = 1
+vm.min_free_kbytes = 32768
 vm.vfs_cache_pressure = 50
 vm.dirty_bytes = 8388608
 vm.dirty_background_bytes = 8388608
 vm.dirty_writeback_centisecs = 600
 vm.dirty_expire_centisecs = 600
 # In other words the seven optimizations do this, in their order, each in paranthesis:
-#    (keep caches medium and swap low), (keep a free memory of 8 MB), (keep a
+#    (keep caches minimum and swap minimum), (keep a free memory of 32 MB), (keep a
 #    medium amount of file information in cache), (processes write after reaching
 #    8MB in their memory) to a (cache of 8 MB in size), in which (old data is
 #    written every 6 seconds) and (data is considered old after 6 seconds).
+# Having a vm.swapiness bigger than 1 makes the kernel crash.
+# Having a vm.min_free_kbytes smaller than 8192 makes the system crash. More given.
 EOF
 echo ""
 echo ""
