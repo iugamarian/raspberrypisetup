@@ -1,0 +1,75 @@
+
+# Worked for me - build Kodi deb for Jessie
+# Version 0.24
+# Adapted from Archlinuxarm kodi-rbp PKGBUILD file
+
+  # After checkinstall completes go to /var/tmp/*/package/DEBIAN and modify Isengard15.1 to 15.1-1
+  # Checkinstall terminal is still open awaiting y to view log - don't do it or you luse the /var/tmp/*
+  # Open another terminal and rename package directory to xbmc-15.1 and do: dpkg-deb --build xbmc-15.1
+  # And avoid losing the deb after pressing y in checkinstall do: cp xbmc-15.1.deb ~/
+  # Checkinstall terminal is still open awaiting y to view log - you can press y now
+
+sudo echo "deb-src http://archive.raspbian.org/raspbian/ jessie main contrib non-free rpi" >> /etc/apt/sources.list
+sudo apt-get update
+sudo apt-get build-dep xbmc xbmc-bin
+sudo apt-get install -y checkinstall libboost1.50-all swig curl libxml2-dev libxslt1-dev libfreetype6-dev libfontconfig1-dev libfribidi-dev libmpeg2-4-dev libmad0-dev libsamplerate0-dev libogg-dev libvorbis-dev libflac-dev libtiff5-dev liblzo2-dev cmake zip unzip libsqlite3-dev libpng12-dev libpcre3-dev libjasper-dev libsdl1.2-dev libsdl-image1.2-dev libass-dev libmodplug-dev libcdio-dev libtinyxml2-dev libyajl-dev libgpg-error-dev libgcrypt11-dev libmicrohttpd-dev autoconf libtool autopoint libudev-dev python-dev python-imaging libmysqlclient-dev libcurl4-gnutls-dev libbz2-dev libtinyxml-dev libssh-dev libxrandr-dev libsmbclient-dev libcap-dev gawk gperf debhelper libiso9660-dev liblockdev1-dev ccache libgnutls28-dev libtiff5-dev libjpeg62-turbo-dev build-essential
+sudo apt-get install -y gccxml icu-devtools libboost-chrono1.50.0 libboost-date-time1.50.0 libboost-exception1.50.0 libboost-filesystem1.50.0 libboost-graph-parallel1.50.0 libboost-graph1.50.0 libboost-locale1.50.0 libboost-math1.50.0 libboost-mpi-python1.50.0 libboost-mpi1.50.0 libboost-program-options1.50.0 libboost-python1.50.0 libboost-random1.50.0 libboost-regex1.50.0 libboost-serialization1.50.0 libboost-signals1.50.0 libboost-system1.50.0 libboost-test1.50.0 libboost-thread1.50.0 libboost-timer1.50.0 libboost-wave1.50.0 libcr0 libhwloc-dev libhwloc-plugins libhwloc5 libibverbs-dev libibverbs1 libicu-dev libjs-iscroll libopenmpi-dev libopenmpi1.6 libsctp1 lksctp-tools mpi-default-dev openmpi-common
+wget -c https://github.com/xbmc/xbmc/archive/15.1-Isengard.tar.gz
+MAKEFLAGS=-j3 ./bootstrap
+  # Configuring Kodi
+  export PYTHON_VERSION=2  # external python v2
+  # we need to compile for armv6 instead of armv5 to avoid problems compiling assembler code
+  FLAGS="-Ofast -fexcess-precision=fast -mfloat-abi=hard -mabi=aapcs-linux -pipe -fstack-protector --param=ssp-buffer-size=4 \
+         -D_FORTIFY_SOURCE=1 -I/opt/vc/include/ -I/opt/vc/include/IL -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux"
+  #[[ $CARCH == "armv6h" ]] && export CFLAGS="$FLAGS -mcpu=arm1176jzf-s -mtune=arm1176jzf-s -mfpu=vfp" && export CXXFLAGS="$FLAGS -mcpu=arm1176jzf-s -mtune=arm1176jzf-s -mfpu=vfp"
+  export CFLAGS="$FLAGS -mcpu=cortex-a7 -mtune=cortex-a7 -mfpu=neon-vfpv4 -mvectorize-with-neon-quad" && export CXXFLAGS="$FLAGS -mcpu=cortex-a7 -mtune=cortex-a7 -mfpu=neon-vfpv4 -mvectorize-with-neon-quad"
+  export LDFLAGS="$LDFLAGS -L/opt/vc/lib -L/usr/lib/arm-linux-gnueabihf/ -L/usr/include/samba-4.0/"
+  # export PKG_CONFIG_PATH=/usr/lib/pkgconfig
+  # If build fails try uncommenting the line below first
+  #export MAKEFLAGS="-j1"
+
+# Correct errors for dependencies by installing libraries manually
+# sudo ln -s /usr/lib/arm-linux-gnueabihf/pkgconfig/libbluray.pc /usr/lib/pkgconfig/libbluray.pc
+# sudo ln -s /usr/lib/arm-linux-gnueabihf/libshairplay.so.0.0.0 /usr/lib/libshairplay.so.0
+
+  ./configure PKG_CONFIG_PATH=/usr/lib/arm-linux-gnueabihf/pkgconfig --prefix=/usr --exec-prefix=/usr  \
+  --with-platform=raspberry-pi \
+  --disable-gl \
+  --enable-gles \
+  --disable-x11 \
+  --disable-sdl \
+  --enable-optimizations \
+  --disable-goom \
+  --disable-pulse \
+  --disable-vaapi \
+  --disable-vdpau \
+  --disable-xrandr \
+  --enable-airplay \
+  --enable-airtunes \
+  --enable-avahi \
+  --enable-libbluray \
+  --enable-dvdcss \
+  --disable-debug \
+  --disable-joystick \
+  --disable-mid \
+  --enable-nfs \
+  --disable-profiling \
+  --disable-projectm \
+  --enable-rsxs \
+  --enable-rtmp \
+  --disable-vaapi \
+  --enable-optical-drive \
+  --enable-player=omxplayer \
+  ac_cv_lib_bluetooth_hci_devid=no
+
+  make
+
+  #checkinstall -D make install
+
+  # After checkinstall completes go to /var/tmp/*/package/DEBIAN and modify Isengard15.1 to 15.1-1
+  # Checkinstall terminal is still open awaiting y to view log - don't do it or you luse the /var/tmp/*
+  # Open another terminal and rename package directory to xbmc-15.1 and do: dpkg-deb --build xbmc-15.1
+  # And avoid losing the deb after pressing y in checkinstall do: cp xbmc-15.1.deb ~/
+  # Checkinstall terminal is still open awaiting y to view log - you can press y now
+  
+  # On new Raspbian Jessie images just do: sudo dpkg -i xbmc-15.1.deb
