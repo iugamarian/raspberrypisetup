@@ -1,6 +1,6 @@
 
 # Worked for me - build Kodi deb for Jessie
-# Version 0.24
+# Version 0.25
 # Adapted from Archlinuxarm kodi-rbp PKGBUILD file
 
   # After checkinstall completes go to /var/tmp/*/package/DEBIAN and modify Isengard15.1 to 15.1-1
@@ -24,7 +24,7 @@ MAKEFLAGS=-j3 ./bootstrap
   #[[ $CARCH == "armv6h" ]] && export CFLAGS="$FLAGS -mcpu=arm1176jzf-s -mtune=arm1176jzf-s -mfpu=vfp" && export CXXFLAGS="$FLAGS -mcpu=arm1176jzf-s -mtune=arm1176jzf-s -mfpu=vfp"
   export CFLAGS="$FLAGS -mcpu=cortex-a7 -mtune=cortex-a7 -mfpu=neon-vfpv4 -mvectorize-with-neon-quad" && export CXXFLAGS="$FLAGS -mcpu=cortex-a7 -mtune=cortex-a7 -mfpu=neon-vfpv4 -mvectorize-with-neon-quad"
   export LDFLAGS="$LDFLAGS -L/opt/vc/lib -L/usr/lib/arm-linux-gnueabihf/ -L/usr/include/samba-4.0/"
-  # export PKG_CONFIG_PATH=/usr/lib/pkgconfig
+  export PKG_CONFIG_PATH=/usr/lib/arm-linux-gnueabihf/pkgconfig/
   # If build fails try uncommenting the line below first
   #export MAKEFLAGS="-j1"
 
