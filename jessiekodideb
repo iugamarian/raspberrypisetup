@@ -1,6 +1,6 @@
 
 # Worked for me - build Kodi deb for Jessie
-# Version 0.26
+# Version 0.27
 # Adapted from Archlinuxarm kodi-rbp PKGBUILD file
 
   # After checkinstall completes go to /var/tmp/*/package/DEBIAN and modify Isengard15.1 to 15.1-1
@@ -16,6 +16,7 @@ sudo apt-get install -y checkinstall libboost1.50-all swig curl libxml2-dev libx
 sudo apt-get install -y gccxml icu-devtools libboost-chrono1.50.0 libboost-date-time1.50.0 libboost-exception1.50.0 libboost-filesystem1.50.0 libboost-graph-parallel1.50.0 libboost-graph1.50.0 libboost-locale1.50.0 libboost-math1.50.0 libboost-mpi-python1.50.0 libboost-mpi1.50.0 libboost-program-options1.50.0 libboost-python1.50.0 libboost-random1.50.0 libboost-regex1.50.0 libboost-serialization1.50.0 libboost-signals1.50.0 libboost-system1.50.0 libboost-test1.50.0 libboost-thread1.50.0 libboost-timer1.50.0 libboost-wave1.50.0 libcr0 libhwloc-dev libhwloc-plugins libhwloc5 libibverbs-dev libibverbs1 libicu-dev libjs-iscroll libopenmpi-dev libopenmpi1.6 libsctp1 lksctp-tools mpi-default-dev openmpi-common
 wget -c https://github.com/xbmc/xbmc/archive/15.1-Isengard.tar.gz
 tar xzf 15.1-Isengard.tar.gz
+cd 15.1-Isengard
 MAKEFLAGS=-j3 ./bootstrap
   # Configuring Kodi
   export PYTHON_VERSION=2  # external python v2
