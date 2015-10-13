@@ -1,6 +1,6 @@
 
 # Worked for me - build Kodi deb for Jessie
-# Version 0.27
+# Version 0.28
 # Adapted from Archlinuxarm kodi-rbp PKGBUILD file
 
   # After checkinstall completes go to /var/tmp/*/package/DEBIAN and modify Isengard15.1 to 15.1-1
@@ -74,4 +74,12 @@ MAKEFLAGS=-j3 ./bootstrap
   # And avoid losing the deb after pressing y in checkinstall do: cp xbmc-15.1.deb ~/
   # Checkinstall terminal is still open awaiting y to view log - you can press y now
   
-  # On new Raspbian Jessie images just do: sudo dpkg -i xbmc-15.1.deb
+  # On new Raspbian Jessie images just install xbmc dependencies (not build-dep):
+  # sudo apt-get install -y xbmc xbmc-bin
+  # sudo apt-get remove -y  xbmc xbmc-bin
+  # (dependencies remain installed)
+  # And then install the built xbmc package (doesn't say what it's dependencies are):
+  # sudo dpkg -i xbmc-15.1.deb
+  # Run kodi-standalone in a terminal, install specified missing libraries
+  # After it opens, when you exit, to get back to the desktop press ctrl+alt+f1 ctrl+alt+f7
+
