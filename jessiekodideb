@@ -82,4 +82,13 @@ MAKEFLAGS=-j3 ./bootstrap
   # sudo dpkg -i xbmc-15.1.deb
   # Run kodi-standalone in a terminal, install specified missing libraries
   # After it opens, when you exit, to get back to the desktop press ctrl+alt+f1 ctrl+alt+f7
-
+  # Avoid apt-get autoremove because it uninstalls the dependencies. Or if you need to do it, do this:
+  # sudo apt-get autoremove
+  # sudo apt-get remove xbmc
+  # sudo apt-get install -y xbmc xbmc-bin
+  # sudo apt-get remove -y  xbmc xbmc-bin
+  # sudo dpkg -i xbmc-15.1.deb
+  
+  # To do
+  # Insert dependencies in package/DEBIAN folder before dpkg-deb
+  
