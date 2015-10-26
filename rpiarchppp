@@ -1228,6 +1228,9 @@ framebuffer_depth=24
 # For camera and webm
 start_file=start_x.elf
 fixup_file=fixup_x.dat
+# Bad usb cables, but working
+avoid_warnings=1
+avoid_warnings=2
 EOF
 echo "Conf /etc/X11/xorg.conf.d/50-on-flags.conf for screen always on:"; echo ""
 mkdir sdcardforarch/etc/X11
@@ -1238,6 +1241,11 @@ Section "ServerFlags"
     Option "StandbyTime" "0"
     Option "SuspendTime" "0"
     Option "OffTime" "0"
+EndSection
+EOF
+cat <<EOF > sdcardforarch/etc/X11/xorg.conf.d/50-slow-mouse.conf
+Section "ImputDevice"
+    Option "Sensitivity" "0.2"
 EndSection
 EOF
 mkdir /etc/systemd
