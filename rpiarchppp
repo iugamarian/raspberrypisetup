@@ -1,7 +1,7 @@
 #!/bin/bash
 # Advanced script to install and configure Arch with ppp on indicated sdcardforarch
 # More info and newest @ http://www.github.com/iugamarian/raspberrypisetup
-# Version 1.70 tested and it works
+# Version 1.71 tested and it works
 # Forked from ShorTie	<idiot@dot.com> 
 # Brought to you by iugamarian	<iugamarian@yahoo.com> 
 # Configuration - choose here carefuly 
@@ -924,7 +924,7 @@ sleep 2
 pacman -S --noconfirm --needed alsa-utils alsa-plugins pulseaudio pulseaudio-alsa paprefs pavucontrol timidity++ timidity-freepats
 sleep 2
 # Xorg packages
-pacman -S --noconfirm --needed unrar unzip zip unarj p7zip gzip bzip2 xarchiver mesa-libgl ttf-freefont ttf-dejavu xorg-server xorg-xinit libksane xsane-gimp inkscape phonon-qt4-gstreamer phonon-qt5-gstreamer gparted audacious gimp libreoffice-still jre8-openjdk jdk8-openjdk xsane kactivities4 xorg-xrefresh fltk
+pacman -S --noconfirm --needed xinput unrar unzip zip unarj p7zip gzip bzip2 xarchiver mesa-libgl ttf-freefont ttf-dejavu xorg-server xorg-xinit libksane xsane-gimp inkscape phonon-qt4-gstreamer phonon-qt5-gstreamer gparted audacious gimp libreoffice-still jre8-openjdk jdk8-openjdk xsane kactivities4 xorg-xrefresh fltk
 sleep 2
 # Lxde packages
 pacman -S --noconfirm --needed chromium firefox calligra-krita gpicview lxappearance lxappearance-obconf lxde-common lxde-icon-theme lxdm lxinput lxlauncher lxmenu-data lxmusic lxpanel lxrandr lxsession lxtask lxterminal openbox pcmanfm transmission-gtk leafpad mediainfo-gui gvfs texlive-bin evince
@@ -1074,6 +1074,20 @@ sync
 sleep 2
 EOF
 chmod a+x install8localesro-edit.sh
+echo '#!/bin/bash' > mouseslower.sh
+cat <<EOF >> mouseslower.sh
+# http://felixmilea.com/2014/10/bash-command-automatically-fix-mouse-sensitivity/
+# Some devices (like barcode readers mouse) don't work with option in xorg.conf
+echo "See your device name with: xinput --list --short"
+echo "and replace instead of Barcode Reader in command."
+echo "Replace 2 with what you want -- how many times slower."
+echo "Then add command at the end of: /usr/bin/kodiexitfixroot"
+# If it appears multiple times, as a pointer or keyboard, takes care of that
+# Commented one is not echoed one, to be read in rpiarchppp not mouseslower.sh
+#xinput --list | grep 'Barcode Reader.*slave[[:space:]]\{1,2\}pointer' | grep -Po '\d+' | awk 'NR%2==1 {print "xinput --set-prop "$1" \"Device Accel Constant Deceleration\" 2"}' | while read line ; do eval $line ; done
+xinput --list | grep 'Barcode Reader.*slave[[:space:]]\{1,2\}pointer' | grep -Po '\d+' | awk 'NR%2==1 {print "xinput --set-prop \"\$1\" \\\"Device Accel Constant Deceleration\\\" 2"}' | while read line ; do eval \$line ; done
+EOF
+chmod a+x mouseslower.sh
 cd ../../
 ######Directory changing ending
 echo "Files /root/install* have been written."
@@ -1241,11 +1255,6 @@ Section "ServerFlags"
     Option "StandbyTime" "0"
     Option "SuspendTime" "0"
     Option "OffTime" "0"
-EndSection
-EOF
-cat <<EOF > sdcardforarch/etc/X11/xorg.conf.d/50-slow-mouse.conf
-Section "ImputDevice"
-    Option "Sensitivity" "0.2"
 EndSection
 EOF
 mkdir /etc/systemd
