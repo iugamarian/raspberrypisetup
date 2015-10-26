@@ -1245,6 +1245,7 @@ fixup_file=fixup_x.dat
 # Bad usb cables, but working
 avoid_warnings=1
 avoid_warnings=2
+max_usb_current=1
 EOF
 echo "Conf /etc/X11/xorg.conf.d/50-on-flags.conf for screen always on:"; echo ""
 mkdir sdcardforarch/etc/X11
