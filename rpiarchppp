@@ -1085,7 +1085,7 @@ echo "Then add command at the end of: /usr/bin/kodiexitfixroot"
 # If it appears multiple times, as a pointer or keyboard, takes care of that
 # Commented one is not echoed one, to be read in rpiarchppp not mouseslower.sh
 #xinput --list | grep 'Barcode Reader.*slave[[:space:]]\{1,2\}pointer' | grep -Po '\d+' | awk 'NR%2==1 {print "xinput --set-prop "$1" \"Device Accel Constant Deceleration\" 2"}' | while read line ; do eval $line ; done
-xinput --list | grep 'Barcode Reader.*slave[[:space:]]\{1,2\}pointer' | grep -Po '\d+' | awk 'NR%2==1 {print "xinput --set-prop \"\$1\" \\\"Device Accel Constant Deceleration\\\" 2"}' | while read line ; do eval \$line ; done
+xinput --list | grep 'Barcode Reader.*slave[[:space:]]\{1,2\}pointer' | grep -Po '\d+' | awk 'NR%2==1 {print \"xinput --set-prop \"\$1\" \\\"Device Accel Constant Deceleration\\\" 2\"}' | while read line ; do eval \$line ; done
 EOF
 chmod a+x mouseslower.sh
 cd ../../
