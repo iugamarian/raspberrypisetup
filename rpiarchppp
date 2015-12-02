@@ -1,7 +1,7 @@
 #!/bin/bash
 # Advanced script to install and configure Arch with ppp on indicated sdcardforarch
 # More info and newest @ http://www.github.com/iugamarian/raspberrypisetup
-# Version 1.71 tested and it works
+# Version 1.72 tested and it works
 # Forked from ShorTie	<idiot@dot.com> 
 # Brought to you by iugamarian	<iugamarian@yahoo.com> 
 # Configuration - choose here carefuly 
@@ -1195,18 +1195,29 @@ echo ""
 cat <<EOF > sdcardforarch/etc/sysctl.d/30-rpi-optimizations.conf
 vm.swappiness = 1
 vm.min_free_kbytes = 32768
-vm.vfs_cache_pressure = 50
+vm.vfs_cache_pressure = 500
 vm.dirty_bytes = 8388608
 vm.dirty_background_bytes = 8388608
 vm.dirty_writeback_centisecs = 600
 vm.dirty_expire_centisecs = 600
 # In other words the seven optimizations do this, in their order, each in paranthesis:
 #    (keep caches minimum and swap minimum), (keep a free memory of 32 MB), (keep a
-#    medium amount of file information in cache), (processes write after reaching
+#    minimum amount of file information in cache), (processes write after reaching
 #    8MB in their memory) to a (cache of 8 MB in size), in which (old data is
 #    written every 6 seconds) and (data is considered old after 6 seconds).
 # Having a vm.swapiness bigger than 1 makes the kernel crash.
 # Having a vm.min_free_kbytes smaller than 8192 makes the system crash. More given.
+#
+#Decreasing vfs_cache_pressure causes the kernel to prefer
+#to retain dentry and inode caches. When vfs_cache_pressure=0, the kernel will
+#never reclaim dentries and inodes due to memory pressure and this can easily
+#lead to out-of-memory conditions. Increasing vfs_cache_pressure beyond 100
+#causes the kernel to prefer to reclaim dentries and inodes.
+#Increasing vfs_cache_pressure significantly beyond 100 may have negative
+#performance impact. Reclaim code needs to take various locks to find freeable
+#directory and inode objects. With vfs_cache_pressure=1000, it will look for
+#ten times more freeable objects than there are.
+#As Raspberry Pi has low memory, incresed vfs_cache_pressure a lot so less out of memory.
 EOF
 echo ""
 echo ""
