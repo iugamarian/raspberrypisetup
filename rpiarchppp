@@ -1,7 +1,7 @@
 #!/bin/bash
 # Advanced script to install and configure Arch with ppp on indicated sdcardforarch
 # More info and newest @ http://www.github.com/iugamarian/raspberrypisetup
-# Version 1.72 tested and it works
+# Version 1.73 tested and it works
 # Forked from ShorTie	<idiot@dot.com> 
 # Brought to you by iugamarian	<iugamarian@yahoo.com> 
 # Configuration - choose here carefuly 
@@ -994,12 +994,22 @@ systemctl start kodiexitfixroot.timer
 sleep 2
 sync
 sleep 2
+# Disable automatic smart testing because hdds are slower for five minutes after each detection:
+systemctl disable smartd
+# Sound always on to avoid hdmi audio popping:
 sed -i 's/load-module module-suspend-on-idle/#load-module module-suspend-on-idle/g' /etc/pulse/default.pa
 sed -i 's/load-module module-suspend-on-idle/#load-module module-suspend-on-idle/g' /etc/pulse/system.pa
+# Comment settings that will be modified, double comment if commented:
+sed -i 's/flat-volumes = /; flat-volumes = /g' /etc/pulse/daemon.conf
+sed -i 's/nice-level = /; nice-level = /g' /etc/pulse/daemon.conf
+sed -i 's/realtime-scheduling = /; realtime-scheduling = /g' /etc/pulse/daemon.conf
+# Avoid system hangs because of audio, let the audio hang instead:
+echo "" >> /etc/pulse/daemon.conf
+echo "# Settings modified from their default to avoid system hangs:" >> /etc/pulse/daemon.conf
+echo "" >> /etc/pulse/daemon.conf
 echo "flat-volumes = no" >> /etc/pulse/daemon.conf
-echo "high-priority = no" >> /etc/pulse/daemon.conf
 echo "nice-level = -1" >> /etc/pulse/daemon.conf
-echo "no-cpu-limit = yes" >> /etc/pulse/daemon.conf
+echo "realtime-scheduling = no" >> /etc/pulse/daemon.conf
 sleep 3
 systemctl daemon-reload
 sleep 5
