@@ -108,6 +108,7 @@ sudo usermod -a -G tty pi
 ########################## Configured Kodi #####################
 cd ../
 rm -rf kodi-15-jessie
+rm /var/crash/*
 sync
 sleep 10
 reboot
