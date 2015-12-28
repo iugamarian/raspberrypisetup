@@ -8,6 +8,7 @@ apt-get remove -y libpulseeight-platform-dev
 apt-get remove -y kodi
 apt-get remove -y kodi-bin
 apt-get remove -y kodi.bin
+apt-get remove -y apport
 apt-get autoremove -y
 wget -c http://www.deb-multimedia.org/pool/main/libs/libshairplay-dmo/libshairplay0_0.9.0~git20130907-dmo2_armhf.deb
 sudo dpkg -i libshairplay0_0.9.0~git20130907-dmo2_armhf.deb
