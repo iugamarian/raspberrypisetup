@@ -1,0 +1,698 @@
+#!/bin/bash
+# Advanced script to install and configure Arch with ppp on indicated sdcardforarch
+# More info and newest @ http://www.github.com/iugamarian/raspberrypisetup
+# Version 1.73 tested and it works
+# Forked from ShorTie	<idiot@dot.com> 
+# Brought to you by iugamarian	<iugamarian@yahoo.com> 
+# Configuration - choose here carefuly 
+
+sdcardforarch=/dev/sdwhat 			# Before running, lsblk to indicate card here
+rpiversionnumber=0			# version, not revision:  0 = autodetect, 1 = BCM2835, 2 = BCM2836
+insaneoverclock=0			# Overclock if set to 1. Set to 0 to avoid this.
+                      # Keep over_voltage to 0 to keep warranty.
+                      # Recommended to have active cooling if overclock. I have a fan on top.
+                      # And have a power supply with minimum current of 2A . I have 3A.
+                      # According to https://www.raspberrypi.org/forums/viewtopic.php?p=176865#p176865
+                      # having an over_voltage of 0 ensures the warranty bit is not set
+                      # (force_turbo || current_limit_override || temp_limit>85) && over_voltage>0
+
+# Use a minimum 8 GB card as I also make a swap partition of 512 MB. Down in "Fdisk area".
+
+#********** END Configuration **************************************************************
+
+# Check to see if device is indicated
+if [ `echo $sdcardforarch | grep sdwhat |wc -c` -eq 0 ]; then
+    echo ""
+    echo "The drive to move root to is $sdcardforarch."
+    echo ""
+else
+    lsblk
+    echo ""
+    echo "Specify the drive by editing the beginning of this script."
+    echo ""
+    exit 1
+fi
+# Check to see if running as root
+echo -e "\nChecking for root."
+if [ `id -u` != 0 ]; then
+    echo "Not root."
+    echo -e "Need to be run as root.\n"
+    echo " Try 'sudo sh rpiarchserialtorouter' as a user. Exiting."
+    echo ""
+    exit 1
+else
+    echo "Root."
+fi
+# Noting time when started
+start_time=$(date)
+echo ""
+echo ""
+# Pi check
+if [ `cat /proc/cpuinfo | grep BCM |wc -c` -eq 0 ]; then
+    echo "Not running on a Raspberry Pi."
+    rpirunningon=0
+#   exit 1
+else
+    echo "Running on a Raspberry Pi."
+    rpirunningon=1
+fi
+echo ""
+rpiversioncorrect=0
+#Selecting version
+if [ $rpiversionnumber -eq 0 ]; then
+    # Autodetect
+    rpiversioncorrect=1
+    echo "Autodetecting Raspberry Pi version..."
+    if [ $rpirunningon -eq 1 ]; then
+        # Running on a Pi or Pi 2 during autodetect
+        echo "The the cpu of this Raspberry Pi is:"
+        echo ""
+        if [ `cat /proc/cpuinfo | grep ARMv6 |wc -c` -eq 0 ]; then
+            echo "BCM2836 ARMv7 Raspberry Pi 2"
+            rpiversion="armv7h"
+        else
+            rpiversion="unknown"
+        fi
+        if [ `cat /proc/cpuinfo | grep ARMv7 |wc -c` -eq 0 ]; then
+            echo "BCM2835 ARMv6 Raspberry Pi"
+            rpiversion="armv6h"
+        else
+            version="unknown"
+        fi
+        if [ "$rpiversion" = "unknown" ]; then
+                echo "Can't autodetect Raspberry Pi version while running on one."
+                echo "Choose rpiversionnumber=1 or rpiversionnumber=2 in configuration."
+                echo "Exiting."
+                echo ""
+                exit 1
+        fi
+    else
+        # Not running on Pi or Pi 2 during autodetect
+        echo ""
+        echo "Can't autodetect Raspberry Pi version when not running on one."
+        echo "Choose rpiversionnumber=1 or rpiversionnumber=2 in configuration."
+        echo "Exiting."
+        echo ""
+        exit 1
+    fi
+    # End of autodetect
+else
+    echo "Not autodetecting Raspberry Pi version."
+    # End of no autodetect message
+fi
+if [ $rpiversionnumber -eq 1 ]; then
+    rpiversion="armv6h"
+    rpiversioncorrect=1
+fi
+if [ $rpiversionnumber -eq 2 ]; then
+    rpiversion="armv7h"
+    rpiversioncorrect=1
+fi
+if [ $rpiversioncorrect -eq 0 ]; then
+    # Incorrect rpiversionnumber
+    echo "Chosen rpiversionnumber is not 0 1 or 2."
+    echo "Choose rpiversionnumber=1 or rpiversionnumber=2 in configuration."
+    echo "Exiting."
+    echo ""
+    exit 1
+fi
+# End of selecting version
+echo ""
+echo "Selected Arch architecture is:"
+echo ""
+echo ""
+echo $rpiversion
+echo ""
+echo ""
+echo "============================================================"
+echo ""
+sleep 2
+# Allowing dd to be able to clear MBR (permission)
+viewsudouser=`logname`
+viewroot=""
+# A string echo "" is seen by wc as having 1 character so n+1, and a failed grep has a wc of 0
+if [ `echo $viewsudouser | grep "root" |wc -c` != 0 ] && [ `echo $viewsudouser |wc -c` = 5 ]; then
+viewroot="root"
+fi
+# On Arch a no login name gives a wc of 1
+if [ `echo $viewsudouser |wc -c` = 1 ]; then
+viewroot="root"
+fi
+# On other systems no login name maybe gives no login name
+if [ `echo $viewsudouser | grep "no login name" |wc -c` != 0 ]; then
+viewroot="root"
+fi
+if [ `echo $viewroot |wc -c` != 1 ]; then
+echo ""
+echo "Only root."
+echo "Adding root to the disk group."
+echo""
+usermod -G disk --append root
+else
+echo ""
+echo "Sudo is used by a user named $viewsudouser."
+echo "Adding user named $viewsudouser to the disk group."
+echo ""
+usermod -G disk --append $viewsudouser
+fi
+echo ""
+echo "Checking for programs that are needed:"
+echo ""
+# If on Arch this commands install them
+pacman -Syu --noconfirm
+sleep 2
+pacman -S --noconfirm --needed base-devel dosfstools wget libarchive
+sleep 2
+sync
+# On other distributions the user installs them
+neededprograms=""
+if [ `which fdisk |wc -c` != 0 ]; then
+echo "Found fdisk."
+else
+neededprograms+="fdisk "
+fi
+if [ `which mkfs.vfat |wc -c` != 0 ]; then
+echo "Found mkfs.vfat."
+else
+neededprograms+="mkfs.vfat "
+fi
+if [ `which wget |wc -c` != 0 ]; then
+echo "Found wget."
+else
+neededprograms+="wget "
+fi
+if [ `which bsdtar |wc -c` != 0 ]; then
+echo "Found bsdtar."
+else
+neededprograms+="bsdtar "
+fi
+echo ""
+if [ "$neededprograms" = "" ]; then
+echo "All needed programs available."
+else
+echo "Missing needed programs, install them:"
+echo ""
+echo $neededprograms
+echo ""
+echo "On Arch fdisk is in util-linux which is in base-devel."
+echo ""
+echo "On Arch mkfs.vfat is in dosfstools and bsdtar is in libarchive."
+echo ""
+echo "Exiting."
+echo ""
+exit 1
+fi
+# Detecting availability of indicated device
+if ! (fdisk -l | grep $sdcardforarch); then
+    echo "Can't find ($sdcardforarch). Insert and indicate it."
+    echo "No files. Only devices. Exiting."
+    echo ""
+    exit 1
+else
+    echo "Found indicated device $sdcardforarch."
+    echo ""
+fi
+echo ""
+echo "============================================================"
+echo ""
+sleep 2
+# Safety unmounting of possible partitions, logicals can start from 5
+echo "Unmounting partitions, up to 9, with or without p in front:"
+echo ""
+umount "$sdcardforarch"1
+umount "$sdcardforarch"2
+umount "$sdcardforarch"3
+umount "$sdcardforarch"4
+umount "$sdcardforarch"5
+umount "$sdcardforarch"6
+umount "$sdcardforarch"7
+umount "$sdcardforarch"8
+umount "$sdcardforarch"9
+umount "$sdcardforarch"p1
+umount "$sdcardforarch"p2
+umount "$sdcardforarch"p3
+umount "$sdcardforarch"p4
+umount "$sdcardforarch"p5
+umount "$sdcardforarch"p6
+umount "$sdcardforarch"p7
+umount "$sdcardforarch"p8
+umount "$sdcardforarch"p9
+swapoff "$sdcardforarch"1
+swapoff "$sdcardforarch"2
+swapoff "$sdcardforarch"3
+swapoff "$sdcardforarch"4
+swapoff "$sdcardforarch"5
+swapoff "$sdcardforarch"6
+swapoff "$sdcardforarch"7
+swapoff "$sdcardforarch"8
+swapoff "$sdcardforarch"9
+swapoff "$sdcardforarch"p1
+swapoff "$sdcardforarch"p2
+swapoff "$sdcardforarch"p3
+swapoff "$sdcardforarch"p4
+swapoff "$sdcardforarch"p5
+swapoff "$sdcardforarch"p6
+swapoff "$sdcardforarch"p7
+swapoff "$sdcardforarch"p8
+swapoff "$sdcardforarch"p9
+echo ""
+sleep 5
+echo ""
+echo "Deleting MBR and fat allocation table general area with dd:"
+# Need to dd more because fat filesystems may get confused about random
+# data in their first part where they store the fat allocation table
+dd if=/dev/zero of=$sdcardforarch bs=1M count=32 iflag=fullblock
+echo ""
+echo ""
+echo "Partitioning indicated device:"
+echo ""
+# On fdisk older than 25, setting bootable flag adds 1 after a: "a,1" < 25, "a" >= 25
+# But I follow the archlinuxarm instructions which don't set booteble flag
+# "Fdisk area". Be careful about the new lines (Enter).
+fdisk $sdcardforarch <<EOF
+o
+n
+
+
+
++140M
+t
+c
+n
+
+
+
++512M
+n
+
+
+
+
+w
+EOF
+# Finished partitioning. Be careful about the new lines (Enter).
+sleep 5
+echo ""
+echo "=================================================="
+echo ""
+echo ""
+echo "Detecting if the device is seen as a mmcblk so that partitions have a p in front"
+echo ""
+if [ `echo $sdcardforarch | grep mmcblk |wc -c` != 0 ]; then
+echo ""
+echo "Partition numbers have a p in front of them..."
+bootpart="$sdcardforarch"p1
+swappart="$sdcardforarch"p2
+rootpart="$sdcardforarch"p3
+else
+echo ""
+echo "Partition numbers don't have a p in front of them..."
+bootpart="$sdcardforarch"1
+swappart="$sdcardforarch"2
+rootpart="$sdcardforarch"3
+fi
+echo ""
+echo -n "Boot partition is "
+echo $bootpart
+echo -n "Swap partition is "
+echo $swappart
+echo -n "Root partition is "
+echo $rootpart
+echo ""
+echo ""
+echo "Formatting partitions:"
+echo ""
+mkfs.vfat -n BOOTRPI $bootpart
+mkswap $swappart
+# Disabling lazy options so that all inodes get written now not bit by bit later.
+mke2fs -t ext4 -m 0 -F -L ARCHRPI -E lazy_itable_init=0,lazy_journal_init=0 $rootpart
+echo ""
+echo "Mounting partitions:"
+echo ""
+mkdir sdcardforarch
+mount $rootpart sdcardforarch
+mkdir sdcardforarch/boot
+mount $bootpart sdcardforarch/boot
+echo ""
+echo "=================================================="
+echo ""
+sleep 2
+sync
+sleep 2
+echo "Downloading Arch image with wget:"
+echo ""
+echo ""
+if [ "$rpiversion" = "armv6h" ]; then
+# The nl mirror is faster but does not have os/
+wget -c http://de4.mirror.archlinuxarm.org/os/ArchLinuxARM-rpi-latest.tar.gz
+echo "Unpacking Arch image into the root partition with bsdtar... wait... (armv6h)"
+bsdtar -xpf ArchLinuxARM-rpi-latest.tar.gz -C sdcardforarch
+fi
+if [ "$rpiversion" = "armv7h" ]; then
+# The nl mirror is faster but does not have os/
+wget -c http://de4.mirror.archlinuxarm.org/os/ArchLinuxARM-rpi-2-latest.tar.gz
+echo "Unpacking Arch image into the root partition with bsdtar... wait... (armv7h)"
+bsdtar -xpf ArchLinuxARM-rpi-2-latest.tar.gz -C sdcardforarch
+fi
+sleep 2
+sync
+sleep 2
+# ... for #!/bin/bash if I put "" gives me an error because of the !
+echo '#!/bin/bash' > install3console.sh
+cat <<EOF >> install3console.sh
+echo ""
+# Making sure package lists are up to date right now
+pacman -Syu --noconfirm
+sleep 2
+# Packages only for the Raspberry Pi or ArchLinuxARM (comment if installing on something else)
+pacman -S --noconfirm --needed libbcm2835 xf86-video-fbturbo-git kodi-rbp omxplayer packer
+# Console packages - fdisk is in util-linux which is in base-devel
+pacman -S --noconfirm --needed base base-devel arch-install-scripts dosfstools minicom ddrescue mtools libarchive pkgfile iotop gptfdisk parted mkinitcpio mkinitcpio-busybox upower mc libnewt newt-syrup openssh openssl wiringpi espeak mpg123 flac lame youtube-dl imagemagick git wget libx264 mediainfo ncdu vorbis-tools elinks
+sleep 2
+echo "Configuring boot and /etc/fstab to use UUID for partitions."
+echo ""
+# The UUID is determined in rpiarchppp as sed can't execute or show variable
+sed -i 's/\/dev\/mmcblk0p3/UUID=`blkid -s UUID -o value $rootpart`/g' /boot/cmdline.txt
+sed -i 's/rootwait/rootwait initrd=0x01f00000/g' /boot/cmdline.txt
+echo "initramfs initrd 0x01f00000" >> /boot/config.txt
+genfstab -U / > /etc/fstab
+echo ""
+echo "Making an initramfs giving the kernel the ability to boot by UUID."
+echo ""
+echo "This is done automatically for every kernel update."
+echo ""
+sed -i 's/ block / /g' /etc/mkinitcpio.conf
+sed -i 's/udev/udev block/g' /etc/mkinitcpio.conf
+sleep 2
+sync
+sleep 2
+mkinitcpio -k \$(uname -r) -g /boot/initrd
+sleep 2
+sync
+sleep 2
+# Hack to allow mc to open videos with omxplayer
+cp /usr/lib/mc/ext.d/video.sh /usr/lib/mc/ext.d/video.sh.old
+echo '#!/bin/sh' > /usr/lib/mc/ext.d/video.sh
+echo "omxplayer \"\\\${MC_EXT_FILENAME}\"" >> /usr/lib/mc/ext.d/video.sh
+echo ""
+echo "Added mc option to open all videos with omxplayer."
+echo ""
+pkgfile --update
+sleep 2
+# Omxplayer available as oi for all users
+ln -s /usr/bin/omxplayer /usr/bin/oi
+# Root aliases, used only by root
+cp /root/.bash_profile /root/.bash_profile.old
+echo "[[ -f ~/.bashrc ]] && . ~/.bashrc" > /root/.bash_profile
+echo 'alias pk="TMPDIR=/root/tmp/pkgs/ EDITOR=nano packer"' >> /root/.bashrc
+echo 'alias yt="youtube-dl -f mp4/best"' >> /root/.bashrc
+. ~/.bashrc
+echo ""
+echo "Added link oi -> omxplayer and root aliases yt -> youtube-dl and pk -> packer."
+echo ""
+echo "Turning off serial console for this Raspberry Pi."
+echo ""
+############################## For ability to acces router by serial:
+#http://logicalgenetics.com/serial-on-raspberry-pi-arch-linux/
+sed -i 's/ console=ttyAMA0,115200 / /g' /boot/cmdline.txt
+sed -i 's/ kgdboc=ttyAMA0,115200 / /g' /boot/cmdline.txt
+systemd stop serial-getty@ttyAMA0.service
+systemd disable serial-getty@ttyAMA0.service
+##############################
+echo "Rebooting to have initrd loaded."
+sleep 2
+sync
+sleep 8
+reboot
+EOF
+chmod a+x install3console.sh
+echo '#!/bin/bash' > install4autologinroot.sh
+cat <<EOF >> install4autologinroot.sh
+echo ""
+echo "Activating autologin root... not recomended but maybe cool..."
+echo ""
+echo "If you want to keep ssh and have a user, stop this script with (ctrl + c)"
+echo ""
+sleep 2
+echo "2"
+echo ""
+sleep 2
+echo "1"
+echo ""
+sleep 2
+echo "Too late..."
+echo ""
+sync
+sleep 1
+systemctl stop sshd.service
+systemctl disable sshd.service
+echo ""
+echo "Wait..."
+sleep 1
+sync
+sleep 1
+systemctl daemon-reload
+sleep 5
+sync
+sleep 3
+rm /etc/systemd/system/getty.target.wants/getty@tty1.service
+cp /lib/systemd/system/getty@.service /etc/systemd/system/getty@tty1.service
+sed -i 's/--noclear/--autologin root --noclear/g' /etc/systemd/system/getty@tty1.service
+echo ";Alias=getty@tty1.service" >> /etc/systemd/system/getty@tty1.service
+ln -s /etc/systemd/system/getty@tty1.service /etc/systemd/system/getty.target.wants/getty@tty1.service
+sleep 1
+echo ""
+echo "Hack for autologing into root console and disabling ssh activated."
+echo ""
+echo "If you want to build packages, it's hard to be root, you need to:"
+echo ""
+echo "1) Edit /usr/bin/makepkg"
+echo ""
+echo "    a) Add 'asroot' in OPT_LONG=()"
+echo "    b) Comment and add a sleep 1 inside if (( EUID == 0 ))"
+echo ""
+echo "2) Use packer to install packages from aur"
+echo ""
+echo "To avoid tmpfs for /tmp used by packer (large git repositories)"
+echo 'alias packer="TMPDIR=/root/tmp/pkgs/ EDITOR=nano /usr/bin/packer"'
+echo "Use the alias packer in .bashrc."
+echo ""
+sleep 2
+sync
+sleep 2
+EOF
+chmod a+x install4autologinroot.sh
+cd ../../
+######Directory changing ending
+echo "Files /root/install* have been written."
+echo ""
+echo ""
+echo "=================================================="
+echo ""
+echo ""
+sleep 2
+sync
+sleep 2
+# Root is on partition 3 not 2, informing cmdline.txt and fstab
+mkdir sdcardforarch/etc/
+sed -i 's/mmcblk0p2/mmcblk0p3/g' sdcardforarch/boot/cmdline.txt
+sed -i 's/mmcblk0p2/mmcblk0p3/g' sdcardforarch/etc/fstab
+echo "/dev/mmcblk0p2	none      	swap      	defaults  	0 0" >> sdcardforarch/etc/fstab
+# Choosing a mirror
+sed -i 's/Server = http:\/\/mirror.archlinuxarm.org\/$arch\/$repo/#Server = http:\/\/mirror.archlinuxarm.org\/$arch\/$repo\n\nServer = http:\/\/nl.mirror.archlinuxarm.org\/$arch\/$repo/g' sdcardforarch/etc/pacman.d/mirrorlist
+echo "Configuring  ppp with information from configuration..."
+echo ""
+mkdir sdcardforarch/etc/ppp
+mkdir sdcardforarch/etc/ppp/peers
+echo "plugin rp-pppoe.so" > sdcardforarch/etc/ppp/peers/$pppprovider
+echo "eth0" >> sdcardforarch/etc/ppp/peers/$pppprovider
+echo "name \"$pppusername\"" >> sdcardforarch/etc/ppp/peers/$pppprovider
+echo "usepeerdns" >> sdcardforarch/etc/ppp/peers/$pppprovider
+echo "persist" >> sdcardforarch/etc/ppp/peers/$pppprovider
+echo "defaultroute" >> sdcardforarch/etc/ppp/peers/$pppprovider
+echo "hide-password" >> sdcardforarch/etc/ppp/peers/$pppprovider
+echo "noauth" >> sdcardforarch/etc/ppp/peers/$pppprovider
+echo "" >> sdcardforarch/etc/ppp/peers/$pppprovider
+echo "File /etc/ppp/peers/$pppprovider is as follows:"
+echo ""
+cat sdcardforarch/etc/ppp/peers/$pppprovider
+echo ""
+echo ""
+echo "\"$pppusername\"	*	\"$ppppassword\"" > sdcardforarch/etc/ppp/pap-secrets
+# For safety I will copy pap-secrets to also chap-secrets
+cp sdcardforarch/etc/ppp/pap-secrets sdcardforarch/etc/ppp/chap-secrets
+echo "File /etc/ppp/peers/pap-secrets and chap-secrets are as follows:"
+echo ""
+cat sdcardforarch/etc/ppp/pap-secrets
+echo ""
+echo ""
+mkdir sdcardforarch/etc/modules-load.d
+echo "Conf file to load module ppp-generic:"
+echo "/etc/modules-load.d/ppp-generic.conf"
+echo "ppp-generic" > sdcardforarch/etc/modules-load.d/ppp-generic.conf
+echo ""
+echo "Conf file to load module snd-bcm2835:"
+echo "/etc/modules-load.d/snd-bcm2835.conf"
+echo "snd-bcm2835" > sdcardforarch/etc/modules-load.d/snd-bcm2835.conf
+echo ""
+echo ""
+echo "The link to provider will be made by install1.sh"
+echo ""
+echo "The systemd ppp enable will be made by install1.sh"
+echo ""
+echo "Conf file to reduce device wear by systemd:"
+echo "/etc/systemd/journald.conf.d/disablejournald.conf"
+mkdir sdcardforarch/etc/systemd/journald.conf.d
+echo "[Journal]" > sdcardforarch/etc/systemd/journald.conf.d/20-disable-journald.conf
+echo "Storage=none" >> sdcardforarch/etc/systemd/journald.conf.d/20-disable-journald.conf
+echo "Seal=no" >> sdcardforarch/etc/systemd/journald.conf.d/20-disable-journald.conf
+echo ""
+cat sdcardforarch/etc/systemd/journald.conf.d/20-disable-journald.conf
+echo ""
+echo ""
+echo "Conf file to start network in systemd before pppd:"
+echo "Actual file: /etc/systemd/system/ppp@.service.d/ppp.conf"
+mkdir sdcardforarch/etc/systemd/system/ppp\@.service.d
+echo "[Service]" > sdcardforarch/etc/systemd/system/ppp\@.service.d/ppp.conf
+#echo "ExecStartPre=/bin/bash /usr/bin/poff -a" >> sdcardforarch/etc/systemd/system/ppp\@.service.d/ppp.conf
+#echo "ExecStartPre=/usr/bin/ip link set eth0 down" >> sdcardforarch/etc/systemd/system/ppp\@.service.d/ppp.conf
+#echo "ExecStartPre=ExecStartPre=/usr/bin/sleep 3" >> sdcardforarch/etc/systemd/system/ppp\@.service.d/ppp.conf
+echo "ExecStartPre=/usr/bin/ip link set eth0 up" >> sdcardforarch/etc/systemd/system/ppp\@.service.d/ppp.conf
+echo ""
+echo "File /etc/systemd/system/ppp\@.service.d/ppp.conf is as follows:"
+echo ""
+cat sdcardforarch/etc/systemd/system/ppp\@.service.d/ppp.conf
+echo ""
+echo "Configuring man-db.timer and updatedb.timer to start later."
+mkdir sdcardforarch/etc/systemd/system/man-db.timer.d
+echo "[Timer]" > sdcardforarch/etc/systemd/system/man-db.timer.d/man-db.timer.conf
+echo "OnCalender=" >> sdcardforarch/etc/systemd/system/man-db.timer.d/man-db.timer.conf
+echo "OnCalendar=13:15" >> sdcardforarch/etc/systemd/system/man-db.timer.d/man-db.timer.conf
+echo "OnBootSec=1200" >> sdcardforarch/etc/systemd/system/man-db.timer.d/man-db.timer.conf
+mkdir sdcardforarch/etc/systemd/system/updatedb.timer.d
+echo "[Timer]" > sdcardforarch/etc/systemd/system/updatedb.timer.d/updatedb.timer.conf
+echo "OnCalender=" >> sdcardforarch/etc/systemd/system/updatedb.timer.d/updatedb.timer.conf
+echo "OnCalendar=13:45" >> sdcardforarch/etc/systemd/system/updatedb.timer.d/updatedb.timer.conf
+echo "OnBootSec=1800" >> sdcardforarch/etc/systemd/system/updatedb.timer.d/updatedb.timer.conf
+echo ""
+echo "Conf file to stop kernel messages:"
+echo "/etc/sysctl.d/20-quiet-prink.conf"
+mkdir sdcardforarch/etc/sysctl.d
+echo "kernel.printk = 3 3 3 3" > sdcardforarch/etc/sysctl.d/20-quiet-prink.conf
+echo ""
+cat sdcardforarch/etc/sysctl.d/20-quiet-prink.conf
+echo ""
+echo ""
+echo "Conf file to improove disk performance:"
+echo "/etc/sysctl.d/30-rpi-optimizations.conf"
+echo ""
+cat <<EOF > sdcardforarch/etc/sysctl.d/30-rpi-optimizations.conf
+vm.swappiness = 1
+vm.min_free_kbytes = 32768
+vm.vfs_cache_pressure = 500
+vm.dirty_bytes = 8388608
+vm.dirty_background_bytes = 8388608
+vm.dirty_writeback_centisecs = 600
+vm.dirty_expire_centisecs = 600
+# In other words the seven optimizations do this, in their order, each in paranthesis:
+#    (keep caches minimum and swap minimum), (keep a free memory of 32 MB), (keep a
+#    minimum amount of file information in cache), (processes write after reaching
+#    8MB in their memory) to a (cache of 8 MB in size), in which (old data is
+#    written every 6 seconds) and (data is considered old after 6 seconds).
+# Having a vm.swapiness bigger than 1 makes the kernel crash.
+# Having a vm.min_free_kbytes smaller than 8192 makes the system crash. More given.
+#
+#Decreasing vfs_cache_pressure causes the kernel to prefer
+#to retain dentry and inode caches. When vfs_cache_pressure=0, the kernel will
+#never reclaim dentries and inodes due to memory pressure and this can easily
+#lead to out-of-memory conditions. Increasing vfs_cache_pressure beyond 100
+#causes the kernel to prefer to reclaim dentries and inodes.
+#Increasing vfs_cache_pressure significantly beyond 100 may have negative
+#performance impact. Reclaim code needs to take various locks to find freeable
+#directory and inode objects. With vfs_cache_pressure=1000, it will look for
+#ten times more freeable objects than there are.
+#As Raspberry Pi has low memory, incresed vfs_cache_pressure a lot so less out of memory.
+EOF
+echo ""
+echo ""
+echo "Creating config.txt"; echo ""
+cp sdcardforarch/boot/config.txt sdcardforarch/boot/configold.txt
+cat <<EOF > sdcardforarch/boot/config.txt
+#The other commented options are in config.txt.old
+EOF
+# Overclock. Keep over_voltage to 0 to keep warranty. Optional.
+if [ $insaneoverclock -eq 1 ]; then
+cat <<EOF >> sdcardforarch/boot/config.txt
+# Keep over_voltage to 0 to keep warranty.
+# Measure temp under load with /opt/vc/bin/vcgencmd measure_temp
+# If temperature goes over 60 Celsius need to improove cooling
+arm_freq=900
+over_voltage=0
+core_freq=450
+sdram_freq=450
+force_turbo=1
+avoid_pwm_pll=1
+EOF
+fi
+cat <<EOF >> sdcardforarch/boot/config.txt
+#Rezolution 1280x1024 @ 60 Hz
+hdmi_group=2
+hdmi_mode=35
+#Option hdmi_drive for DVI it's 1, for HDMI with sound (TV, adapter) it's 2
+hdmi_drive=2
+hdmi_force_edid_audio=1
+hdmi_force_hotplug=1
+gpu_mem=256
+framebuffer_depth=24
+# For camera and webm
+start_file=start_x.elf
+fixup_file=fixup_x.dat
+# Bad usb cables, but working
+avoid_warnings=1
+avoid_warnings=2
+max_usb_current=1
+EOF
+echo "Conf /etc/X11/xorg.conf.d/50-on-flags.conf for screen always on:"; echo ""
+mkdir sdcardforarch/etc/X11
+mkdir sdcardforarch/etc/X11/xorg.conf.d
+cat <<EOF > sdcardforarch/etc/X11/xorg.conf.d/50-on-flags.conf
+Section "ServerFlags"
+    Option "BlankTime" "0"
+    Option "StandbyTime" "0"
+    Option "SuspendTime" "0"
+    Option "OffTime" "0"
+EndSection
+EOF
+cp sdcardforarch/boot/config.txt sdcardforarch/boot/confignew.txt
+### When config.txt is lost, cp /boot/confignew.txt config.txt
+sleep 2
+sync
+sleep 2
+umount $bootpart
+umount $rootpart
+swapoff $swappart
+rm -rf sdcardforarch
+rm -rf archcoredbextract
+# Keeping Arch image
+sleep 2
+sync
+sleep 2
+echo "Completed."
+echo ""
+end_time=$(date)
+echo "Started at:"
+echo ""
+echo $start_time
+echo ""
+echo "Finished at:"
+echo ""
+echo $end_time
+echo ""
+echo "Password for root is root. Without the dot."
+echo ""
+echo "Exiting happy."
+echo ""
+sleep 2
+sync
+sleep 2
+exit 0
