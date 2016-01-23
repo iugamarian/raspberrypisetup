@@ -7,8 +7,8 @@
 # Configuration - choose here carefuly 
 
 sdcardforarch=/dev/sdwhat 			# Before running, lsblk to indicate card here
-rpiversionnumber=0			# version, not revision:  0 = autodetect, 1 = BCM2835, 2 = BCM2836
-insaneoverclock=0			# Overclock if set to 1. Set to 0 to avoid this.
+rpiversionnumber=1			# version, not revision:  0 = autodetect, 1 = BCM2835, 2 = BCM2836
+insaneoverclock=1			# Overclock if set to 1. Set to 0 to avoid this.
                       # Keep over_voltage to 0 to keep warranty.
                       # Recommended to have active cooling if overclock. I have a fan on top.
                       # And have a power supply with minimum current of 2A . I have 3A.
@@ -37,7 +37,7 @@ echo -e "\nChecking for root."
 if [ `id -u` != 0 ]; then
     echo "Not root."
     echo -e "Need to be run as root.\n"
-    echo " Try 'sudo sh rpiarchserialtorouter' as a user. Exiting."
+    echo " Try 'sudo sh rpiarchtoserialtorouter' as a user. Exiting."
     echo ""
     exit 1
 else
@@ -357,6 +357,7 @@ fi
 sleep 2
 sync
 sleep 2
+cd sdcardforarch/root
 # ... for #!/bin/bash if I put "" gives me an error because of the !
 echo '#!/bin/bash' > install3console.sh
 cat <<EOF >> install3console.sh
@@ -368,27 +369,6 @@ sleep 2
 pacman -S --noconfirm --needed libbcm2835 xf86-video-fbturbo-git kodi-rbp omxplayer packer
 # Console packages - fdisk is in util-linux which is in base-devel
 pacman -S --noconfirm --needed base base-devel arch-install-scripts dosfstools minicom ddrescue mtools libarchive pkgfile iotop gptfdisk parted mkinitcpio mkinitcpio-busybox upower mc libnewt newt-syrup openssh openssl wiringpi espeak mpg123 flac lame youtube-dl imagemagick git wget libx264 mediainfo ncdu vorbis-tools elinks
-sleep 2
-echo "Configuring boot and /etc/fstab to use UUID for partitions."
-echo ""
-# The UUID is determined in rpiarchppp as sed can't execute or show variable
-sed -i 's/\/dev\/mmcblk0p3/UUID=`blkid -s UUID -o value $rootpart`/g' /boot/cmdline.txt
-sed -i 's/rootwait/rootwait initrd=0x01f00000/g' /boot/cmdline.txt
-echo "initramfs initrd 0x01f00000" >> /boot/config.txt
-genfstab -U / > /etc/fstab
-echo ""
-echo "Making an initramfs giving the kernel the ability to boot by UUID."
-echo ""
-echo "This is done automatically for every kernel update."
-echo ""
-sed -i 's/ block / /g' /etc/mkinitcpio.conf
-sed -i 's/udev/udev block/g' /etc/mkinitcpio.conf
-sleep 2
-sync
-sleep 2
-mkinitcpio -k \$(uname -r) -g /boot/initrd
-sleep 2
-sync
 sleep 2
 # Hack to allow mc to open videos with omxplayer
 cp /usr/lib/mc/ext.d/video.sh /usr/lib/mc/ext.d/video.sh.old
@@ -500,31 +480,6 @@ sed -i 's/mmcblk0p2/mmcblk0p3/g' sdcardforarch/etc/fstab
 echo "/dev/mmcblk0p2	none      	swap      	defaults  	0 0" >> sdcardforarch/etc/fstab
 # Choosing a mirror
 sed -i 's/Server = http:\/\/mirror.archlinuxarm.org\/$arch\/$repo/#Server = http:\/\/mirror.archlinuxarm.org\/$arch\/$repo\n\nServer = http:\/\/nl.mirror.archlinuxarm.org\/$arch\/$repo/g' sdcardforarch/etc/pacman.d/mirrorlist
-echo "Configuring  ppp with information from configuration..."
-echo ""
-mkdir sdcardforarch/etc/ppp
-mkdir sdcardforarch/etc/ppp/peers
-echo "plugin rp-pppoe.so" > sdcardforarch/etc/ppp/peers/$pppprovider
-echo "eth0" >> sdcardforarch/etc/ppp/peers/$pppprovider
-echo "name \"$pppusername\"" >> sdcardforarch/etc/ppp/peers/$pppprovider
-echo "usepeerdns" >> sdcardforarch/etc/ppp/peers/$pppprovider
-echo "persist" >> sdcardforarch/etc/ppp/peers/$pppprovider
-echo "defaultroute" >> sdcardforarch/etc/ppp/peers/$pppprovider
-echo "hide-password" >> sdcardforarch/etc/ppp/peers/$pppprovider
-echo "noauth" >> sdcardforarch/etc/ppp/peers/$pppprovider
-echo "" >> sdcardforarch/etc/ppp/peers/$pppprovider
-echo "File /etc/ppp/peers/$pppprovider is as follows:"
-echo ""
-cat sdcardforarch/etc/ppp/peers/$pppprovider
-echo ""
-echo ""
-echo "\"$pppusername\"	*	\"$ppppassword\"" > sdcardforarch/etc/ppp/pap-secrets
-# For safety I will copy pap-secrets to also chap-secrets
-cp sdcardforarch/etc/ppp/pap-secrets sdcardforarch/etc/ppp/chap-secrets
-echo "File /etc/ppp/peers/pap-secrets and chap-secrets are as follows:"
-echo ""
-cat sdcardforarch/etc/ppp/pap-secrets
-echo ""
 echo ""
 mkdir sdcardforarch/etc/modules-load.d
 echo "Conf file to load module ppp-generic:"
@@ -550,18 +505,6 @@ echo ""
 cat sdcardforarch/etc/systemd/journald.conf.d/20-disable-journald.conf
 echo ""
 echo ""
-echo "Conf file to start network in systemd before pppd:"
-echo "Actual file: /etc/systemd/system/ppp@.service.d/ppp.conf"
-mkdir sdcardforarch/etc/systemd/system/ppp\@.service.d
-echo "[Service]" > sdcardforarch/etc/systemd/system/ppp\@.service.d/ppp.conf
-#echo "ExecStartPre=/bin/bash /usr/bin/poff -a" >> sdcardforarch/etc/systemd/system/ppp\@.service.d/ppp.conf
-#echo "ExecStartPre=/usr/bin/ip link set eth0 down" >> sdcardforarch/etc/systemd/system/ppp\@.service.d/ppp.conf
-#echo "ExecStartPre=ExecStartPre=/usr/bin/sleep 3" >> sdcardforarch/etc/systemd/system/ppp\@.service.d/ppp.conf
-echo "ExecStartPre=/usr/bin/ip link set eth0 up" >> sdcardforarch/etc/systemd/system/ppp\@.service.d/ppp.conf
-echo ""
-echo "File /etc/systemd/system/ppp\@.service.d/ppp.conf is as follows:"
-echo ""
-cat sdcardforarch/etc/systemd/system/ppp\@.service.d/ppp.conf
 echo ""
 echo "Configuring man-db.timer and updatedb.timer to start later."
 mkdir sdcardforarch/etc/systemd/system/man-db.timer.d
