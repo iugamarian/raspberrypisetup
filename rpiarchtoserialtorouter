@@ -594,6 +594,8 @@ fixup_file=fixup_x.dat
 avoid_warnings=1
 avoid_warnings=2
 max_usb_current=1
+# Allow sound after kernel update
+dtparam=audio=on
 EOF
 echo "Conf /etc/X11/xorg.conf.d/50-on-flags.conf for screen always on:"; echo ""
 mkdir sdcardforarch/etc/X11
