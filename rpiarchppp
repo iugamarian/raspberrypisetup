@@ -7,9 +7,9 @@
 # Configuration - choose here carefuly 
 
 sdcardforarch=/dev/sdwhat 			# Before running, lsblk to indicate card here
-pppusername="userppp"
-ppppassword="paswordppp"
-pppprovider="isp"
+enablepppoe=0
+installlxde=0
+installmate=1
 rpiversionnumber=0			# version, not revision:  0 = autodetect, 1 = BCM2835, 2 = BCM2836
 insaneoverclock=0			# Overclock if set to 1. Set to 0 to avoid this.
                       # Keep over_voltage to 0 to keep warranty.
@@ -18,6 +18,9 @@ insaneoverclock=0			# Overclock if set to 1. Set to 0 to avoid this.
                       # According to https://www.raspberrypi.org/forums/viewtopic.php?p=176865#p176865
                       # having an over_voltage of 0 ensures the warranty bit is not set
                       # (force_turbo || current_limit_override || temp_limit>85) && over_voltage>0
+pppusername="userppp"
+ppppassword="paswordppp"
+pppprovider="isp"
 
 # Use a minimum 8 GB card as I also make a swap partition of 512 MB. Down in "Fdisk area".
 
@@ -371,7 +374,7 @@ echo ""
 # "ppp" depends on "libpcap" which depends on "libnl" which then has all it needs from root.
 # So the install order needs to be: libnl -> libpcap -> ppp
 # Offline install is done later one by one by script with pacman -U package
-coredblink=http://nl.mirror.archlinuxarm.org/"$rpiversion"/core/core.db.tar.gz
+coredblink=http://de7.mirror.archlinuxarm.org/"$rpiversion"/core/core.db.tar.gz
 wget $coredblink
 mkdir archcoredbextract
 bsdtar -xpf core.db.tar.gz -C archcoredbextract
@@ -382,9 +385,9 @@ echo $namelibnl
 echo $namelibpcap
 echo $nameppp
 #And the links are:
-linklibnl=http://nl.mirror.archlinuxarm.org/"$rpiversion"/core/"$namelibnl"-"$rpiversion".pkg.tar.xz
-linklibpcap=http://nl.mirror.archlinuxarm.org/"$rpiversion"/core/"$namelibpcap"-"$rpiversion".pkg.tar.xz
-linkppp=http://nl.mirror.archlinuxarm.org/"$rpiversion"/core/"$nameppp"-"$rpiversion".pkg.tar.xz
+linklibnl=http://de7.mirror.archlinuxarm.org/"$rpiversion"/core/"$namelibnl"-"$rpiversion".pkg.tar.xz
+linklibpcap=http://de7.mirror.archlinuxarm.org/"$rpiversion"/core/"$namelibpcap"-"$rpiversion".pkg.tar.xz
+linkppp=http://de7.mirror.archlinuxarm.org/"$rpiversion"/core/"$nameppp"-"$rpiversion".pkg.tar.xz
 echo ""
 echo "Downloading the packages into the installed /root dir:"
 ######Directory changing beginning
@@ -397,6 +400,7 @@ echo ""
 echo "Generating install scripts install* to run after login:"
 #Back to the names now... adding the -armv7h.pkg.tar.xz though
 # ... for #!/bin/bash if I put "" gives me an error because of the !
+if [ $enablepppoe -eq 1 ]; then
 echo '#!/bin/bash' > install1ppp.sh
 cat <<EOF >> install1ppp.sh
 echo ""
@@ -517,6 +521,7 @@ sleep 2
 sync
 EOF
 chmod a+x install1ppp.sh
+fi
 # ... for #!/bin/bash if I put "" gives me an error because of the !
 echo '#!/bin/bash' > install2upgrade.sh
 cat <<EOF >> install2upgrade.sh
@@ -910,11 +915,11 @@ sleep 8
 EOF
 chmod a+x install5moverootusb.sh
 # ... for #!/bin/bash if I put "" gives me an error because of the !
-echo '#!/bin/bash' > install6lxde.sh
+echo '#!/bin/bash' > install6xorg.sh
 # Having cat with EOF inside, it is needed to use something else like EOG
-cat <<EOF >> install6lxde.sh
+cat <<EOF >> install6xorg.sh
 echo ""
-echo "Installing lxde..."
+echo "Installing xorg..."
 echo ""
 sleep 2
 # Making sure package lists are up to date right now
@@ -924,17 +929,15 @@ sleep 2
 pacman -S --noconfirm --needed alsa-utils alsa-plugins pulseaudio pulseaudio-alsa paprefs pavucontrol timidity++ timidity-freepats
 sleep 2
 # Xorg packages
-pacman -S --noconfirm --needed xinput unrar unzip zip unarj p7zip gzip bzip2 xarchiver mesa-libgl ttf-freefont ttf-dejavu xorg-server xorg-xinit libksane xsane-gimp inkscape phonon-qt4-gstreamer phonon-qt5-gstreamer gparted audacious gimp libreoffice-still jre8-openjdk jdk8-openjdk xsane kactivities4 xorg-xrefresh fltk
+pacman -S --noconfirm --needed xorg-xinput unrar unzip zip unarj p7zip gzip bzip2 xarchiver mesa-libgl ttf-freefont ttf-dejavu xorg-server xorg-xinit libksane xsane-gimp inkscape phonon-qt4-gstreamer phonon-qt5-gstreamer gparted audacious gimp libreoffice-still jre8-openjdk jdk8-openjdk xsane xorg-xrefresh fltk openbox gvfs
 sleep 2
-# Lxde packages
-pacman -S --noconfirm --needed chromium firefox calligra-krita gpicview lxappearance lxappearance-obconf lxde-common lxde-icon-theme lxdm lxinput lxlauncher lxmenu-data lxmusic lxpanel lxrandr lxsession lxtask lxterminal openbox pcmanfm transmission-gtk leafpad mediainfo-gui gvfs texlive-bin evince
-sleep 2
+# Graphic applications
+pacman -S --noconfirm chromium firefox midori gpicview transmission-gtk mediainfo-gui xine-ui  gnome-alsamixer file-roller audacious texlive-bin evince calligra
 # Game packages
 pacman -S --noconfirm --needed openra kobodeluxe klines fltk-games
 sleep 2
 sync
 sleep 2
-echo "exec startlxde" > /root/.xinitrc
 echo ""
 sed -i 's/chromium %U/chromium --no-sandbox --user-data-dir \/var\/cache\/chromiumdir %U/g' /usr/share/applications/chromium.desktop
 # Kodi leaves a blank screen when exiting, this hack fixes that
@@ -1029,9 +1032,37 @@ sleep 2
 sync
 sleep 2
 EOF
-chmod a+x install6lxde.sh
-echo '#!/bin/bash' > install7autostartxroot.sh
-cat <<EOF >> install7autostartxroot.sh
+chmod a+x install6xorg.sh
+if [ $installlxde -eq 1 ]; then
+echo '#!/bin/bash' > install7lxde.sh
+cat <<EOF >> install7lxde.sh
+# Lxde packages
+echo ""
+echo "Installing lxde..."
+echo ""
+pacman -S --noconfirm --needed lxappearance lxappearance-obconf lxde-common lxde-icon-theme lxdm lxinput lxlauncher lxmenu-data lxmusic lxpanel lxrandr lxsession lxtask lxterminal openbox pcmanfm leafpad
+echo "exec startlxde" > /root/.xinitrc
+sleep 1
+sync
+sleep 1
+EOF
+fi
+if [ $installmate -eq 1 ]; then
+echo '#!/bin/bash' > install7mate.sh
+cat <<EOF >> install7mate.sh
+# Mate packages
+echo ""
+echo "Installing mate..."
+echo ""
+pacman -S --noconfirm --needed mate mate-extra
+echo "exec mate-session" > /root/.xinitrc
+sleep 1
+sync
+sleep 1
+EOF
+fi
+echo '#!/bin/bash' > install8autostartxroot.sh
+cat <<EOF >> install8autostartxroot.sh
 echo ""
 echo "Activating auto startx at root login..."
 echo ""
@@ -1048,9 +1079,9 @@ sleep 2
 sync
 sleep 2
 EOF
-chmod a+x install7autostartxroot.sh
-echo '#!/bin/bash' > install8localesro-edit.sh
-cat <<EOF >> install8localesro-edit.sh
+chmod a+x install8autostartxroot.sh
+echo '#!/bin/bash' > install9localesro-edit.sh
+cat <<EOF >> install9localesro-edit.sh
 echo ""
 echo "Activating locales for Romania..."
 echo ""
@@ -1083,7 +1114,7 @@ sleep 2
 sync
 sleep 2
 EOF
-chmod a+x install8localesro-edit.sh
+chmod a+x install9localesro-edit.sh
 echo '#!/bin/bash' > mouseslower.sh
 cat <<EOF >> mouseslower.sh
 # http://felixmilea.com/2014/10/bash-command-automatically-fix-mouse-sensitivity/
@@ -1115,7 +1146,7 @@ sed -i 's/mmcblk0p2/mmcblk0p3/g' sdcardforarch/boot/cmdline.txt
 sed -i 's/mmcblk0p2/mmcblk0p3/g' sdcardforarch/etc/fstab
 echo "/dev/mmcblk0p2	none      	swap      	defaults  	0 0" >> sdcardforarch/etc/fstab
 # Choosing a mirror
-sed -i 's/Server = http:\/\/mirror.archlinuxarm.org\/$arch\/$repo/#Server = http:\/\/mirror.archlinuxarm.org\/$arch\/$repo\n\nServer = http:\/\/nl.mirror.archlinuxarm.org\/$arch\/$repo/g' sdcardforarch/etc/pacman.d/mirrorlist
+sed -i 's/Server = http:\/\/mirror.archlinuxarm.org\/$arch\/$repo/#Server = http:\/\/mirror.archlinuxarm.org\/$arch\/$repo\n\nServer = http:\/\/de7.mirror.archlinuxarm.org\/$arch\/$repo/g' sdcardforarch/etc/pacman.d/mirrorlist
 echo "Configuring  ppp with information from configuration..."
 echo ""
 mkdir sdcardforarch/etc/ppp
