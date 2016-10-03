@@ -1046,6 +1046,7 @@ sleep 1
 sync
 sleep 1
 EOF
+chmod +x install7lxde.sh
 fi
 if [ $installmate -eq 1 ]; then
 echo '#!/bin/bash' > install7mate.sh
@@ -1060,6 +1061,7 @@ sleep 1
 sync
 sleep 1
 EOF
+chmod +x install7mate.sh
 fi
 echo '#!/bin/bash' > install8autostartxroot.sh
 cat <<EOF >> install8autostartxroot.sh
