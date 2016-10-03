@@ -1314,7 +1314,7 @@ EndSection
 EOF
 mkdir /etc/systemd
 mkdir /etc/systemd/system
-cat <<EOF > /etc/systemd/system/setmtu@.service
+cat <<'EOF' > /etc/systemd/system/setmtu@.service
 [Unit]
 Description=Set mtu on device
 Before=network.target
