@@ -1,9 +1,16 @@
-#raspberrypisetup
+# raspberrypisetup
+
 Setup scripts to personalize Raspbian or ArchLinuxARM for my needs.
 
 Anyone can fork my scripts and make them their own, changing them as they want.
 
-After the first boot of a freshly installed Raspbian and completing raspi-config I run:
+
+# Make sdcard from .img in .zip file without using space for the .img
+
+unzip -cp 2017-04-10-raspbian-jessie.zip | dd of=/dev/sdc bs=2048 conv=notrunc iflag=fullblock
+
+# After the first boot of a freshly installed Raspbian and completing raspi-config I run:
+
 ###sh rpiarchppp
 `sh rpiarchppp`      - To install Arch on card with ppp support and further install scripts in root
 
