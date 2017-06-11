@@ -1,0 +1,209 @@
+#!/bin/bash
+# Advanced script to install and configure Arch with ppp on indicated sdcardtoformat
+# More info and newest @ http://www.github.com/iugamarian/raspberrypisetup
+# Version 1.73 tested and it works
+# Forked from ShorTie	<idiot@dot.com> 
+# Brought to you by iugamarian	<iugamarian@yahoo.com> 
+# Configuration - choose here carefuly 
+
+sdcardtoformat=/dev/sdwhat 			# Before running, lsblk to indicate card here
+partitionname=MUSIC64
+
+#********** END Configuration **************************************************************
+
+# Check to see if device is indicated
+if [ `echo $sdcardtoformat | grep sdwhat |wc -c` -eq 0 ]; then
+    echo ""
+    echo "The drive to move root to is $sdcardtoformat."
+    echo ""
+else
+    lsblk
+    echo ""
+    echo "Specify the drive by editing the beginning of this script."
+    echo ""
+    exit 1
+fi
+# Check to see if running as root
+echo -e "\nChecking for root."
+if [ `id -u` != 0 ]; then
+    echo "Not root."
+    echo -e "Need to be run as root.\n"
+    echo " Try 'sudo sh rpiarchppp' as a user. Exiting."
+    echo ""
+    exit 1
+else
+    echo "Root."
+fi
+# Allowing dd to be able to clear MBR (permission)
+viewsudouser=`logname`
+viewroot=""
+# A string echo "" is seen by wc as having 1 character so n+1, and a failed grep has a wc of 0
+if [ `echo $viewsudouser | grep "root" |wc -c` != 0 ] && [ `echo $viewsudouser |wc -c` = 5 ]; then
+viewroot="root"
+fi
+# On Arch a no login name gives a wc of 1
+if [ `echo $viewsudouser |wc -c` = 1 ]; then
+viewroot="root"
+fi
+# On other systems no login name maybe gives no login name
+if [ `echo $viewsudouser | grep "no login name" |wc -c` != 0 ]; then
+viewroot="root"
+fi
+if [ `echo $viewroot |wc -c` != 1 ]; then
+echo ""
+echo "Only root."
+echo "Adding root to the disk group."
+echo""
+usermod -G disk --append root
+else
+echo ""
+echo "Sudo is used by a user named $viewsudouser."
+echo "Adding user named $viewsudouser to the disk group."
+echo ""
+usermod -G disk --append $viewsudouser
+fi
+echo ""
+echo "Checking for programs that are needed:"
+echo ""
+# On other distributions the user installs them
+neededprograms=""
+if [ `which fdisk |wc -c` != 0 ]; then
+echo "Found fdisk."
+else
+neededprograms+="fdisk "
+fi
+if [ `which mkfs.vfat |wc -c` != 0 ]; then
+echo "Found mkfs.vfat."
+else
+neededprograms+="mkfs.vfat "
+fi
+if [ `which wget |wc -c` != 0 ]; then
+echo "Found wget."
+else
+neededprograms+="wget "
+fi
+echo ""
+if [ "$neededprograms" = "" ]; then
+echo "All needed programs available."
+else
+echo "Missing needed programs, install them:"
+echo ""
+echo $neededprograms
+echo ""
+echo "On Arch fdisk is in util-linux which is in base-devel."
+echo ""
+echo "On Arch mkfs.vfat is in dosfstools."
+echo ""
+echo "Exiting."
+echo ""
+exit 1
+fi
+# Detecting availability of indicated device
+if ! (fdisk -l | grep $sdcardtoformat); then
+    echo "Can't find ($sdcardtoformat). Insert and indicate it."
+    echo "No files. Only devices. Exiting."
+    echo ""
+    exit 1
+else
+    echo "Found indicated device $sdcardtoformat."
+    echo ""
+fi
+echo ""
+echo "============================================================"
+echo ""
+sleep 2
+# Safety unmounting of possible partitions, logicals can start from 5
+echo "Unmounting partitions, up to 9, with or without p in front:"
+echo ""
+umount "$sdcardtoformat"1
+umount "$sdcardtoformat"2
+umount "$sdcardtoformat"3
+umount "$sdcardtoformat"4
+umount "$sdcardtoformat"5
+umount "$sdcardtoformat"6
+umount "$sdcardtoformat"7
+umount "$sdcardtoformat"8
+umount "$sdcardtoformat"9
+umount "$sdcardtoformat"p1
+umount "$sdcardtoformat"p2
+umount "$sdcardtoformat"p3
+umount "$sdcardtoformat"p4
+umount "$sdcardtoformat"p5
+umount "$sdcardtoformat"p6
+umount "$sdcardtoformat"p7
+umount "$sdcardtoformat"p8
+umount "$sdcardtoformat"p9
+swapoff "$sdcardtoformat"1
+swapoff "$sdcardtoformat"2
+swapoff "$sdcardtoformat"3
+swapoff "$sdcardtoformat"4
+swapoff "$sdcardtoformat"5
+swapoff "$sdcardtoformat"6
+swapoff "$sdcardtoformat"7
+swapoff "$sdcardtoformat"8
+swapoff "$sdcardtoformat"9
+swapoff "$sdcardtoformat"p1
+swapoff "$sdcardtoformat"p2
+swapoff "$sdcardtoformat"p3
+swapoff "$sdcardtoformat"p4
+swapoff "$sdcardtoformat"p5
+swapoff "$sdcardtoformat"p6
+swapoff "$sdcardtoformat"p7
+swapoff "$sdcardtoformat"p8
+swapoff "$sdcardtoformat"p9
+echo ""
+sleep 5
+echo ""
+echo "Deleting MBR and fat allocation table general area with dd:"
+# Need to dd more because fat filesystems may get confused about random
+# data in their first part where they store the fat allocation table
+dd if=/dev/zero of=$sdcardtoformat bs=1M count=32 iflag=fullblock
+echo ""
+echo ""
+echo "Partitioning indicated device:"
+echo ""
+# On fdisk older than 25, setting bootable flag adds 1 after a: "a,1" < 25, "a" >= 25
+# But I follow the archlinuxarm instructions which don't set booteble flag
+# "Fdisk area". Be careful about the new lines (Enter).
+fdisk $sdcardtoformat <<EOF
+o
+n
+
+
+
+
+t
+c
+w
+EOF
+# Finished partitioning. Be careful about the new lines (Enter).
+sleep 5
+echo ""
+echo "=================================================="
+echo ""
+echo ""
+echo "Detecting if the device is seen as a mmcblk so that partitions have a p in front"
+echo ""
+if [ `echo $sdcardtoformat | grep mmcblk |wc -c` != 0 ]; then
+echo ""
+echo "Partition numbers have a p in front of them..."
+bootpart="$sdcardtoformat"p1
+else
+echo ""
+echo "Partition numbers don't have a p in front of them..."
+bootpart="$sdcardtoformat"1
+fi
+echo ""
+echo -n "Boot partition is "
+echo $bootpart
+echo ""
+echo ""
+echo "Formatting partition:"
+echo ""
+mkfs.vfat -n $partitionname $bootpart
+echo "Exiting happy."
+echo ""
+sleep 2
+sync
+sleep 2
+exit 0
