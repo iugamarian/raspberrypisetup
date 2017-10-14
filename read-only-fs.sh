@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# https://learn.adafruit.com/read-only-raspberry-pi/
+
 # CREDIT TO THESE TUTORIALS:
 # petr.io/en/blog/2015/11/09/read-only-raspberry-pi-with-jessie
 # hallard.me/raspberry-pi-read-only
