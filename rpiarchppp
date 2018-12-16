@@ -331,7 +331,7 @@ echo ""
 mkfs.vfat -n BOOTRPI $bootpart
 mkswap $swappart
 # Disabling lazy options so that all inodes get written now not bit by bit later.
-mke2fs -t ext4 -m 0 -F -L ARCHRPI -E lazy_itable_init=0,lazy_journal_init=0 $rootpart
+mke2fs -t ext4 -m 0 -F -O ^64bit -L ARCHRPI -E lazy_itable_init=0,lazy_journal_init=0 $rootpart
 echo ""
 echo "Mounting partitions:"
 echo ""
@@ -844,7 +844,7 @@ echo "Formatting partitions:"
 echo ""
 mkswap \$moveswapto
 # Disabling lazy options so that all inodes get written now not bit by bit later.
-mke2fs -t ext4 -m 0 -F -L ARCHRPIROOT -E lazy_itable_init=0,lazy_journal_init=0 \$moverootto
+mke2fs -t ext4 -m 0 -F -O ^64bit -L ARCHRPIROOT -E lazy_itable_init=0,lazy_journal_init=0 \$moverootto
 echo ""
 echo "Mounting partitions:"
 echo ""
