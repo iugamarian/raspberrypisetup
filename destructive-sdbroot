@@ -9,7 +9,7 @@ umount /dev/sdb8
 dd if=/dev/zero of=/dev/sdb count=8192 bs=512 conv=notrunc,noerror
 parted -s /dev/sdb mklabel msdos
 parted -s /dev/sdb unit cyl mkpart primary ext4 -- 0 -2
-mkfs.ext4 /dev/sdb1
+mkfs.ext4 -O ^64bit /dev/sdb1
 # Determine skip and count with
 # parted -s 2014-01-07-wheezy-raspbian.img print
 dd if=2014-01-07-wheezy-raspbian.img of=/dev/sdb1 skip=122880 count=5662720 bs=512 conv=notrunc,noerror
